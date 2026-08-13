@@ -48,6 +48,8 @@ It is not the `matkp-main` branch — an earlier revision of this document confl
 
 **Naming, settled.** The flagship application is **CMD**, and its directory is `apps/cmd`. "HuGeAMP" is not a separate portal — `hugeamp.org` is the domain that serves the CMD portal, branded as CMD. The earlier trees showing both `apps/a2f` and `apps/hugeamp` described one application under two names. Use `cmd` everywhere in code, configuration, and artifact identifiers; the second portal's ID is `msk` regardless of the old branch name.
 
+**Naming addendum (2026-08-13): `md` and CMD are the same portal.** The BioIndex registry and the old platform know the flagship as disease group **`md`** — the group `hugeamp.org` resolves to when no subdomain is present (see "What MSK is" above). They are one portal under two naming systems: `cmd` is canonical in this repository (code, configuration, artifact identifiers, per the paragraph above), and `md` is what the BioIndex API calls the same thing (`portalGroup: md`, `q=md`) — an upstream identifier CMD's portal config carries as data, never something a shared package branches on (D-05). This is the **only** portal whose repository ID diverges from its registry name; every other portal (`msk`, `t2d`, `sleep`, …) uses its registry name as its portal ID, which is why portal config needs an explicit registry-group field rather than assuming the ID matches. Where these documents say the "md family," read: the CMD family, under its registry name.
+
 **Rationale.** CMD first validates the foundation against the hardest case immediately. MSK is the purest available test of the governing design principle — *features are shared, looks are portal-customizable* (D-14). Same features, different presentation, no separate branch to reconcile: exactly the shape every portal is supposed to have in the new architecture. It should also be the cheapest possible second portal to stand up, since its delta over CMD is theme, chrome, and landing rather than new capability.
 
 **What this pairing does and does not validate.** CMD-plus-MSK exercises the presentation-customization boundary thoroughly and the feature-divergence boundary barely at all. CFDE was originally chosen as portal two *because* it was the most divergent; that stress test is now deferred to whenever CFDE is rebuilt (O-15). The second-consumer risk (an abstraction with one caller cannot be validated) is mitigated for theming and chrome, and remains open for deep feature divergence.
@@ -59,6 +61,8 @@ It is not the `matkp-main` branch — an earlier revision of this document confl
 **Decided.** The CMD portal is served at `hugeamp.org`. Every other portal is served at `<portal>.hugeamp.org`.
 
 Portal identity in code is the portal ID (`cmd`, `msk`, …), never the hostname. Nothing in a shared package may branch on either, per D-05.
+
+**Clarification (2026-08-13):** no `md.hugeamp.org` exists — the registry's `md` group has always been served as bare `hugeamp.org` (it is the CMD portal under its registry name, per the D-04 naming addendum). The `<portal>.hugeamp.org` rule applies to the other portals; there is no `md` subdomain to alias or migrate.
 
 ### D-05 — One-directional dependency rule
 
@@ -388,6 +392,8 @@ Note that byte-equivalence remains unachievable regardless: Nitro writes wall-cl
 
 **Decided.** The seven `md`-family portals (`md`, `t2d`, `sleep`, `cd`, `cvd`, `t1d`, `kidney`) are **one application with seven build configurations**, producing seven separate static artifacts. They are not seven `apps/` directories. Portals outside the family remain distinct applications.
 
+**Naming note (2026-08-13).** Registry `md` is the CMD portal itself under its BioIndex name (D-04, naming addendum) — the family's default member is the flagship, not a seventh variant. Concretely: the base build of `apps/cmd` is what the registry calls `md`, the `variants/` directory holds the other six (`t2d`, `sleep`, `cd`, `cvd`, `t1d`, `kidney`), and "seven build configurations" means base plus six variants. The flagship's artifact identifier is `cmd`, never `md` (D-04); the six variant artifacts keep their registry names, which are their portal IDs.
+
 **Why this doesn't reopen D-27.** The artifact contract is unchanged: seven configs still yield seven independently deployable, per-portal artifacts with their own manifests — no universal bundle. What softens is only "one *application* per portal," for a family whose members differ in phenotype subset, branding, and content rather than capability. This is also strictly better than today, where all 26 portals share one artifact at runtime; the family goes from runtime-switched to build-time-separated.
 
 **The variant boundary, stated as a rule:**
@@ -582,7 +588,7 @@ This is consistent with D-20: a portal counts as having a new version when it ex
 
 **Consequences.**
 
-- **The necessary portal set should still be enumerated.** Not as a deadline, but because it determines CI cost and owner staffing (D-31, D-39). Eleven live portal lines exist beyond `master`. See [O-05](#o-05--enumerate-the-necessary-portal-set).
+- **The necessary portal set should still be enumerated.** Not as a deadline, but because it determines CI cost and owner staffing (D-31, D-39). Eleven live portal lines exist beyond `master`. See [O-05](#o-05--disposition-of-the-remaining-portal-lines).
 - **The old repository is maintained for the whole buildout**, with no end date. Accepted.
 
 ### D-39 — Governance rules
@@ -639,7 +645,9 @@ Factual errors in `brainstorming.md` worth fixing if it is ever revised:
 
 ## Open items
 
-### Blocking, and currently unassigned
+Triaged 2026-08-13: only items that gate a foundation milestone or decay irreversibly remain blocking (O-01–O-04). Every other undecided or deferred item moved to the deferred section below with an explicit revisit trigger, and O-10 moved to the closed ledger.
+
+### Blocking
 
 #### O-01 — Sequence and timeboxes for the foundation milestones
 
@@ -655,7 +663,7 @@ A suggested order, following the dependency grain (adjust freely):
 
 #### O-02 — CMD route inventory and build order
 
-The raw list is mechanically derivable from `vue.config.js`. Ordering the 47 production entries is the part requiring judgment, and D-37 makes it foundation work. Needs an owner. Do it before the Vue 2 application is retired, since the CMS-defined routes cannot be reconstructed afterwards.
+The raw list is mechanically derivable from `vue.config.js`. Ordering the 47 production entries is the part requiring judgment, and D-37 makes it foundation work. Owned by the architect (D-35a). Do it before the Vue 2 application is retired, since the CMS-defined routes cannot be reconstructed afterwards.
 
 #### O-03 — Studio monorepo arrangement
 
@@ -672,7 +680,11 @@ The policy questions are closed by D-07b. The CMS stays editable until its porta
 - **A repeatable `portal content:import` command.** Runs per page at build time and as often as useful until go-live, overwriting on each run (D-07b). Must filter on publication state (D-07a) and **must sanitize all HTML-bearing fields** (tag/attribute/URL-scheme allowlists, Markdown/MDC conversion where possible — D-07b). Malicious-content fixtures belong in its tests from the first version. A diff of what moved in the CMS since the last run is worth offering but is not a gate.
 - **Zod schemas for research-page definitions** that the existing CMS configurations actually validate against. This is the harder half of the content work and the place where the shape of the old data will resist the new model.
 
-Both belong to foundation item 5 (D-35) and need an owner.
+Both belong to foundation item 5 (D-35) and are owned by the architect (D-35a).
+
+### Deferred — priority lowered (2026-08-13)
+
+Nothing in this section gates version-one foundation work. Each entry states its revisit trigger; act on the trigger, not the calendar.
 
 #### O-05 — Disposition of the remaining portal lines
 
@@ -691,6 +703,7 @@ That leaves ten live portal lines with no stated disposition: `a2fkp`, `adipose_
 
 Caveats and two findings this surfaced:
 
+- **Registry `md` is CMD** (D-04, naming addendum): the flagship is the only portal whose repository ID (`cmd`) diverges from its registry name. The `md` entry is therefore already dispositioned — it is the flagship being rebuilt — and the family row below should be read with that equivalence.
 - **Prod and dev registries match exactly** — 26 entries with identical fields in both. Whether every registry entry corresponds to a live, visited deployment is still a disposition question.
 - **`private_sleep` is out of scope by decision:** it contains test data and is not an established portal. It is not part of the disposition inventory, leaving **25 registry entries** to disposition. (It was briefly flagged as a challenge to D-34; resolved — see D-34.)
 - **The mechanisms overlap.** `radiant`, `sysbio_kp`, `cancer`, and `neph` appear in this runtime registry *and* have their own branches (`radiant-main`, `sysbio-main`, `cancerkp-main`, `nephkp-main`). The disposition inventory is the union of both lists with the overlaps reconciled, not either list alone.
@@ -699,11 +712,11 @@ The `md`-family fork this finding raised is resolved by D-27a: the family builds
 
 The third answer deserves scrutiny wherever it appears, because D-38a ties old-setup decommissioning to the necessary set being rebuilt — every portal left on the old platform extends old-repository maintenance without an end date. This does not need answering now, but each unrebuilt portal is implicitly choosing that third answer by default.
 
-### Scheduled, with a known decision point
+**Priority lowered (2026-08-13):** not a v1 blocker — the version-one rebuild set is settled (D-04). Revisit trigger: decommission planning under D-38a/D-38b, or whenever old-platform maintenance cost makes the implicit third answer worth confronting deliberately.
 
 #### O-07 — Owned locus-plot rewrite
 
-Deferred by D-20 and gates nothing, but it is still the largest single unknown in the plan and the pages that want it are in the first build group. Worth an owner and a rough estimate sooner than "later," so the size of it is known rather than assumed.
+Deferred by D-20 and gates nothing, but it is still the largest single unknown in the plan and the pages that want it are in the first build group. **Priority lowered (2026-08-13):** revisit trigger is scheduling the first build-group page that needs the plot — size the rewrite then, before that page's work is committed, so the estimate is made when it is actually needed rather than assumed.
 
 #### O-08 — Nuxt 5 upgrade window
 
@@ -711,19 +724,11 @@ D-29 pins the 4.x minor line and schedules an upgrade window. Nuxt 5 has not shi
 
 #### O-09 — Error monitoring tool and owner
 
-Deferred by D-32. Revisit together with D-33, since neither is useful without the other.
-
-#### O-10 — CSP: deferred past v1, closed as a decision
-
-**Decided: no CSP in v1**, matching the current portals, which ship none. Closed as decided rather than pending.
-
-What was learned before deferring, so it isn't relearned later: `nuxt-security` was evaluated and covers less than expected under this hosting model. With static files served by nginx (D-12) its header machinery never runs; what it can do is bake a `<meta http-equiv>` CSP and inline-script hashes into the prerendered HTML (`ssg: { hashScripts: true }`). Report-only mode cannot be delivered via meta tag at all — that is a browser restriction — so any future rollout needs nginx to own the authoritative header, run it as `Content-Security-Policy-Report-Only` first, and enforce once reports go quiet, with `wasm-unsafe-eval` allowed for Nuxt Content's browser SQLite (D-10). When someone picks this up, that hybrid is the starting design.
-
-### Not yet decided, lower urgency
+Deferred by D-32. Revisit together with D-33, since neither is useful without the other. **Priority lowered (2026-08-13):** revisit trigger is the first production cutover, when the accepted silent-failure risk (D-33) starts accruing against real users.
 
 #### O-14 — Shared Nuxt Content collections across applications
 
-Content collections are configured per application in `content.config.ts`, and sharing one collection across sibling applications in a monorepo is not a documented upstream pattern. D-07 raises the stakes, since all content now lives in Content. Prove it or design around it as part of foundation item 5.
+Content collections are configured per application in `content.config.ts`, and sharing one collection across sibling applications in a monorepo is not a documented upstream pattern. D-07 raises the stakes, since all content now lives in Content. **Priority lowered (2026-08-13):** not separately scheduled — the O-03 test exercises the same external-`cwd` mechanism and will confirm or refute it in passing, and a design-around exists (per-application collections reading a shared source directory). Resolve it inside foundation item 5, not as its own effort.
 
 #### O-15 — CFDE disposition: monorepo or separate repository
 
@@ -743,6 +748,22 @@ CFDE was dropped as portal two in favour of MSK (D-04), with an open question of
 
 **Recommendation:** plan CFDE as a monorepo portal, scheduled after the section library and content schemas mature, and decided finally when its rebuild is scheduled. If a governance reason emerges by then (separate funder requirements, its own release approval), D-01 already names that as legitimate grounds to separate.
 
+**Priority lowered (2026-08-13):** the recommendation above is the working plan; the final decision is deliberately deferred to when the CFDE rebuild is scheduled. Nothing to do until then.
+
+### Closed — ledger
+
+Kept so the numbering stays audit-clean.
+
+- **O-06** — closed by D-39: the sandbox template is generated from the monorepo by the `portal` CLI, never maintained by hand.
+- **O-13** — closed by D-31b as *not adopted*: no visual regression testing in v1.
+- **O-11, O-12** — never assigned; the numbers do not appear in this register or its history, and the gap is not a lost item.
+
+#### O-10 — CSP: closed, no CSP in v1
+
+**Decided: no CSP in v1**, matching the current portals, which ship none. Closed as decided rather than pending.
+
+What was learned before deferring, so it isn't relearned later: `nuxt-security` was evaluated and covers less than expected under this hosting model. With static files served by nginx (D-12) its header machinery never runs; what it can do is bake a `<meta http-equiv>` CSP and inline-script hashes into the prerendered HTML (`ssg: { hashScripts: true }`). Report-only mode cannot be delivered via meta tag at all — that is a browser restriction — so any future rollout needs nginx to own the authoritative header, run it as `Content-Security-Policy-Report-Only` first, and enforce once reports go quiet, with `wasm-unsafe-eval` allowed for Nuxt Content's browser SQLite (D-10). When someone picks this up, that hybrid is the starting design.
+
 ---
 
 ## Immediate next actions
@@ -753,7 +774,7 @@ CFDE was dropped as portal two in favour of MSK (D-04), with an open question of
 4. Stand up a throwaway Studio deployment against a test repository to answer the `rootDir` and Git-write-flow questions (O-03, D-08).
 5. Measure the per-collection WASM SQLite dump size against a realistic content set (D-10, foundation item 5).
 6. Confirm the MSK requirements with its owners, since it replaced CFDE as portal two (D-04). Its presentation delta is now located and scoped — disease-group record, stylesheet block, phenotype subset — so `apps/msk` can be estimated directly.
-7. Disposition the remaining ten portal lines when convenient (O-05), enumerating deployed portals rather than branches; each one left undecided implicitly extends old-platform maintenance (D-38a).
+7. Disposition of the remaining portal lines is deferred (O-05) — revisit at decommission planning (D-38a/D-38b), enumerating deployed portals rather than branches; each one left undecided implicitly extends old-platform maintenance.
 8. Convert this document into per-area ADRs once owners are assigned, keeping the `D-nn` identifiers stable as cross-references.
 
 ## Reference documentation

@@ -27,7 +27,8 @@ flowchart LR
 ```text
 dig-portal-next/
   apps/
-    cmd/                      # flagship; serves hugeamp.org (D-04, D-04a)
+    cmd/                      # flagship; serves hugeamp.org; BioIndex
+                              #   registry name: md (D-04, D-04a)
       app/
         components/           # portal-owned presentation (D-14, D-15)
         layouts/              # all layouts portal-owned — none shared (D-14)
@@ -36,7 +37,8 @@ dig-portal-next/
       content/                # Nuxt Content collections (D-07)
       public/
       variants/               # md-family build configs: t2d, sleep, cd,
-                              #   cvd, t1d, kidney (D-27a)
+                              #   cvd, t1d, kidney — six; the family
+                              #   default `md` is cmd itself (D-27a)
       content.config.ts
       nuxt.config.ts
       portal.config.ts        # THE portal definition — identity, features,
