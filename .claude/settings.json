@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "dig-portal-tooling": {
+      "source": {
+        "source": "github",
+        "repo": "broadinstitute/dig-portal-tooling"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "nuxt-stack@dig-portal-tooling": true,
+    "portal-workflow@dig-portal-tooling": true
+  }
+}

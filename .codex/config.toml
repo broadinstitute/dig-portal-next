@@ -1,0 +1,6 @@
+# Managed additions from dig-portal-tooling; edit freely, the installer only appends missing blocks.
+[mcp_servers.nuxt]
+url = "https://nuxt.com/mcp"
+
+[mcp_servers.nuxt-ui]
+url = "https://ui.nuxt.com/mcp"
