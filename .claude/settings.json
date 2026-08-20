@@ -9,6 +9,7 @@
   },
   "enabledPlugins": {
     "nuxt-stack@dig-portal-tooling": true,
-    "portal-workflow@dig-portal-tooling": true
+    "portal-workflow@dig-portal-tooling": true,
+    "portal-migration@dig-portal-tooling": true
   }
 }
