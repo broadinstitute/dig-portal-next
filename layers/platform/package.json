@@ -1,0 +1,7 @@
+{
+  "name": "@dig-portal/platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./nuxt.config.ts"
+}

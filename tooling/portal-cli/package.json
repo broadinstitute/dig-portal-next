@@ -5,6 +5,9 @@
   "bin": {
     "portal": "./src/cli.mjs"
   },
+  "dependencies": {
+    "cross-spawn": "7.0.6"
+  },
   "scripts": {
     "test": "node --test ./test/cli.test.mjs"
   }

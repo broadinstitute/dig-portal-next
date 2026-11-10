@@ -47,15 +47,17 @@ Simple single-page tables are built rather than deferred: they don't count as si
 
 | Step | Status |
 | --- | --- |
-| 1. Workspace + `portal` CLI (D-06, D-31a) | In progress — initial pnpm workspace, `list`/`validate`/`test` CLI, bootstrap CI and CODEOWNERS added; `dev`/`typecheck`/`build`/`package`/`affected` remain |
-| 2. CMD application shell, `portal.config.ts` (D-21) | Not started |
+| 1. Workspace + `portal` CLI (D-06, D-31a) | In progress — `list`, workspace `validate`, `dev`, `typecheck`, `test`, and `build` work; `package`, `affected`, and full schema validation remain |
+| 2. CMD application shell, `portal.config.ts` (D-21) | In progress — minimal Nuxt 4/Nuxt UI shell and typed CMD config build statically; the phenotype route is not yet implemented |
 | 3. Data layer: typed BioIndex client in `packages/api-clients` (D-05, D-13) | Not started |
 | 4. Content pipeline: effector-gene import (narrow, see below) | Not started |
 | 5. Prerender-safety conventions applied to the phenotype route (D-11) | Not started |
 | 6. Phenotype feature sections | Not started |
 | 7. Hosted preview + merge gates (D-31b) | Not started |
 
-Bootstrap CI currently validates the workspace and CLI only; it is not the D-31b merge-gate suite. Extend it to build, typecheck, unit, smoke, and content-schema checks when the app and packages exist.
+Bootstrap CI currently runs workspace validation, CLI tests, and CMD typecheck, static build, and shell smoke test. It is not yet the D-31b merge-gate suite: affected-package selection, dependency-direction lint (D-05), layer-shadow reporting (D-30), feature/package tests, and content-schema validation remain. The D-05 and D-30 checks must be in place before these foundation changes are merged.
+
+The current commands are `pnpm portal list`, `pnpm portal validate`, `pnpm portal test` (CLI tests), and `pnpm portal dev|typecheck|build|test cmd` (portal scripts). The CMD test currently checks the static output, so run `build cmd` first. Local builds stamp the current Git commit as their build ID; uncommitted changes are not represented in that ID and are not release artifacts.
 
 ## Effector-gene lists: fetch vs import
 
@@ -80,9 +82,13 @@ The narrow import is a re-runnable CLI step: CSV to a typed Nuxt Content data co
 - **Legacy deep links**: `/phenotype.html?phenotype=CAD` needs a static alias or nginx rule on the preview host.
 - **Preview hosting**: DNS, nginx and CI access for `cmd.next.hugeamp.org` are unverified.
 - **CS2CT robustness**: the legacy page throws a null-name error during CS2CT initialization; the rebuild needs explicit loading, empty and error states.
+- **CI portability**: pnpm reports ignored `esbuild` and `vue-demi` install scripts. The Windows typecheck and static build pass without them; the Linux workflow has not yet run.
 
 ## Log
 
+- 2026-11-10 — Pinned direct external dependencies to the versions resolved in the lockfile; local workspace dependencies continue to use the `workspace:` protocol.
+- 2026-11-10 — Register review identified the missing D-05/D-30 CI checks, now tracked above. Added CMD ownership and support for canonical portal IDs containing underscores.
+- 2026-11-10 — Committed the bootstrap as `d76c3af` on `feature/phenotype-poc`; added portal-targeted CLI dispatch and the minimal CMD shell with an explicit workspace platform layer. Verified frozen install, six CLI tests, CMD typecheck, static build and smoke test, plus a responsive local dev-server/browser check. No phenotype data or hosted preview yet.
 - 2026-11-10 — Started foundation work: added the initial pnpm workspace, portable `portal` CLI (`list`, `validate`, `test`), bootstrap-only GitHub Actions validation, and architect CODEOWNERS. Full build and affected commands are not implemented yet.
 - 2026-11-10 — Verified `pnpm portal validate`, `pnpm portal test` (3 passing), `pnpm portal list`, and `git diff --check`. The list correctly reports no app packages yet.
 - 2026-11-10 — Planning checkpoint: reviewed the register and legacy phenotype page; probed live BioIndex for CAD; set scope. Adopted the deferral rule. Measured the effector-gene payload and chose build-time import.

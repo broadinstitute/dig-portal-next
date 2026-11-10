@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import spawn from 'cross-spawn';
 
 const workspacePackages = ['apps', 'packages', 'layers', 'tooling'];
 
@@ -87,15 +88,45 @@ export function validateWorkspace(root) {
 function listPortals(root) {
   const portals = discoverPackages(root)
     .filter(({ workspace }) => workspace === 'apps')
-    .sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
+    .map(({ manifestPath }) => path.basename(path.dirname(manifestPath)))
+    .sort();
 
   if (portals.length === 0) {
     console.log('No portal applications found.');
     return 0;
   }
 
-  for (const { manifest } of portals) console.log(manifest.name);
+  for (const portal of portals) console.log(portal);
   return 0;
+}
+
+function runPortalCommand(root, command, portalId, args) {
+  if (!portalId || !/^[a-z0-9][a-z0-9_-]*$/.test(portalId)) {
+    console.error(`Usage: pnpm portal ${command} <portal-id> [arguments]`);
+    return 2;
+  }
+
+  const portal = discoverPackages(root).find(({ manifestPath, workspace }) =>
+    workspace === 'apps' && path.basename(path.dirname(manifestPath)) === portalId,
+  );
+  if (!portal) {
+    console.error(`Portal "${portalId}" was not found.`);
+    return 1;
+  }
+  if (typeof portal.manifest.scripts?.[command] !== 'string' || !portal.manifest.scripts[command].trim()) {
+    console.error(`Portal "${portalId}" does not define a "${command}" script.`);
+    return 1;
+  }
+
+  const result = spawn.sync('pnpm', ['--dir', path.dirname(portal.manifestPath), 'run', command, ...args], {
+    cwd: root,
+    stdio: 'inherit',
+  });
+  if (result.error) {
+    console.error(`Could not run "${command}" for "${portalId}": ${result.error.message}`);
+    return 1;
+  }
+  return result.status ?? 1;
 }
 
 function runTests(root) {
@@ -114,7 +145,12 @@ function runTests(root) {
 }
 
 export function main(args, root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')) {
-  const [command] = args;
+  const [command, ...rest] = args;
+
+  if ((command === 'list' || command === 'validate') && rest.length > 0) {
+    console.error(`Usage: pnpm portal ${command}`);
+    return 2;
+  }
 
   if (command === 'list') return listPortals(root);
   if (command === 'validate') {
@@ -126,9 +162,12 @@ export function main(args, root = path.resolve(path.dirname(fileURLToPath(import
     console.log('Workspace validation passed.');
     return 0;
   }
-  if (command === 'test') return runTests(root);
+  if (command === 'test' && rest.length === 0) return runTests(root);
+  if (['dev', 'typecheck', 'test', 'build'].includes(command)) {
+    return runPortalCommand(root, command, rest[0], rest.slice(1));
+  }
   if (command === '--help' || command === '-h' || command === undefined) {
-    console.log('Usage: pnpm portal <list|validate|test>');
+    console.log('Usage: pnpm portal <list|validate|test|dev|typecheck|build> [portal-id] [arguments]');
     return 0;
   }
 
