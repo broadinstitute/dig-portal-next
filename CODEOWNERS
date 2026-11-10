@@ -1,0 +1,10 @@
+/CODEOWNERS @qu-y
+/package.json @qu-y
+/pnpm-workspace.yaml @qu-y
+/pnpm-lock.yaml @qu-y
+/.github/ @qu-y
+/tooling/ @qu-y
+/layers/ @qu-y
+/packages/domain/ @qu-y
+/packages/api-clients/ @qu-y
+/docs/decisions.md @qu-y

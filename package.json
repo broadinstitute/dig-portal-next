@@ -1,0 +1,12 @@
+{
+  "name": "dig-portal-next",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "portal": "node ./tooling/portal-cli/src/cli.mjs",
+    "test": "pnpm portal test"
+  }
+}

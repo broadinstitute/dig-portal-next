@@ -1,5 +1,6 @@
 
 .vscode/
+node_modules/
 
 # Synced from broadinstitute/dig-portal-tooling via `node codex/install.mjs` — do not commit copies
 .codex/skills/

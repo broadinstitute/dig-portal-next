@@ -1,0 +1,11 @@
+{
+  "name": "@dig-portal/portal-cli",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "portal": "./src/cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test ./test/cli.test.mjs"
+  }
+}
