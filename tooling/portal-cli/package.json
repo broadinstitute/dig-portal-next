@@ -6,7 +6,10 @@
     "portal": "./src/cli.mjs"
   },
   "dependencies": {
-    "cross-spawn": "7.0.6"
+    "@dig-portal/content": "workspace:*",
+    "cross-spawn": "7.0.6",
+    "csv-parse": "7.0.3",
+    "dependency-cruiser": "18.7.2"
   },
   "scripts": {
     "test": "node --test ./test/cli.test.mjs"

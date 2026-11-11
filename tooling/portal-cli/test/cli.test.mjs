@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { discoverPackages, main, validateWorkspace } from '../src/cli.mjs';
+import { validateDependencyDirection } from '../src/boundaries.mjs';
+import { discoverPackages, main, runSharedPackageScripts, validateWorkspace } from '../src/cli.mjs';
+import { importEffectorCatalog } from '../src/content-import.mjs';
 
 function createWorkspace(t) {
   const root = mkdtempSync(path.join(os.tmpdir(), 'portal-cli-'));
@@ -58,11 +60,11 @@ test('requires every declared workspace root', (t) => {
   assert.match(validateWorkspace(root).join('\n'), /must include packages\/\*/);
 });
 
-test('runs portal scripts with forwarded arguments and underscore IDs', (t) => {
+test('runs portal scripts with forwarded arguments and underscore IDs', async (t) => {
   const root = createWorkspace(t);
   createPackage(root, 'apps', 'cmd', {
     name: '@dig-portal/cmd',
-    scripts: { build: 'node build.mjs' },
+    scripts: { 'validate-content': 'node -e "process.exit(0)"', build: 'node build.mjs' },
   });
   createPackage(root, 'apps', 'vision_genomics', {
     name: '@dig-portal/vision_genomics',
@@ -74,26 +76,185 @@ test('runs portal scripts with forwarded arguments and underscore IDs', (t) => {
     "import { writeFileSync } from 'node:fs'; writeFileSync('args.json', JSON.stringify(process.argv.slice(2)));\n",
   );
 
-  assert.equal(main(['build', 'cmd', '--example', 'two words'], root), 0);
+  assert.equal(await main(['build', 'cmd', '--example', 'two words'], root), 0);
   assert.deepEqual(JSON.parse(readFileSync(path.join(app, 'args.json'), 'utf8')), ['--example', 'two words']);
-  assert.equal(main(['typecheck', 'vision_genomics'], root), 0);
+  assert.equal(await main(['typecheck', 'vision_genomics'], root), 0);
 });
 
-test('rejects unknown portals, missing scripts, and invalid portal IDs', (t) => {
+test('rejects unknown portals, missing scripts, and invalid portal IDs', async (t) => {
   const root = createWorkspace(t);
   createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
 
-  assert.equal(main(['build', 'unknown'], root), 1);
-  assert.equal(main(['build', 'cmd'], root), 1);
-  assert.equal(main(['build', '../cmd'], root), 2);
+  assert.equal(await main(['build', 'unknown'], root), 1);
+  assert.equal(await main(['build', 'cmd'], root), 1);
+  assert.equal(await main(['build', '../cmd'], root), 2);
 });
 
-test('propagates a failing portal script', (t) => {
+test('propagates a failing portal script', async (t) => {
   const root = createWorkspace(t);
   createPackage(root, 'apps', 'cmd', {
     name: '@dig-portal/cmd',
     scripts: { typecheck: 'node -e "process.exit(7)"' },
   });
 
-  assert.notEqual(main(['typecheck', 'cmd'], root), 0);
+  assert.notEqual(await main(['typecheck', 'cmd'], root), 0);
+});
+
+test('blocks a portal build when its content validation fails', async (t) => {
+  const root = createWorkspace(t);
+  createPackage(root, 'apps', 'cmd', {
+    name: '@dig-portal/cmd',
+    scripts: { 'validate-content': 'node -e "process.exit(7)"', build: 'node build.mjs' },
+  });
+  const app = path.join(root, 'apps', 'cmd');
+  writeFileSync(path.join(app, 'build.mjs'), "import { writeFileSync } from 'node:fs'; writeFileSync('built.txt', 'yes');\n");
+
+  assert.notEqual(await main(['build', 'cmd'], root), 0);
+  assert.equal(existsSync(path.join(app, 'built.txt')), false);
+});
+
+test('requires a nonempty content validation script before building a portal', async (t) => {
+  const root = createWorkspace(t);
+  const app = path.join(root, 'apps', 'cmd');
+  for (const validation of [undefined, '   ']) {
+    createPackage(root, 'apps', 'cmd', {
+      name: '@dig-portal/cmd',
+      scripts: { 'validate-content': validation, build: 'node build.mjs' },
+    });
+    writeFileSync(path.join(app, 'build.mjs'), "import { writeFileSync } from 'node:fs'; writeFileSync('built.txt', 'yes');\n");
+
+    assert.equal(await main(['build', 'cmd'], root), 1);
+    assert.equal(existsSync(path.join(app, 'built.txt')), false);
+  }
+});
+
+test('runs shared package scripts without running application scripts', (t) => {
+  const root = createWorkspace(t);
+  createPackage(root, 'apps', 'cmd', {
+    name: '@dig-portal/cmd',
+    scripts: { test: 'node -e "process.exit(7)"' },
+  });
+  createPackage(root, 'packages', 'shared', {
+    name: '@dig-portal/shared',
+    scripts: { test: 'node test.mjs' },
+  });
+  const packageDir = path.join(root, 'packages', 'shared');
+  writeFileSync(path.join(packageDir, 'test.mjs'), "import { writeFileSync } from 'node:fs'; writeFileSync('ran.txt', 'ok');\n");
+
+  assert.equal(runSharedPackageScripts(root, 'test'), 0);
+  assert.equal(readFileSync(path.join(packageDir, 'ran.txt'), 'utf8'), 'ok');
+});
+
+test('imports only published public effector lists and preserves the previous file on failure', async (t) => {
+  const root = createWorkspace(t);
+  createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+  const app = path.join(root, 'apps', 'cmd');
+  const csv = [
+    'Trait ID,Effector list name,Title,Citation,PMID,Page ID',
+    'CAD; T2D,<script>alert(1)</script>List,<img src=x onerror=alert(1)>Title,<a href=javascript:alert(1)>Citation</a>,123,page_1',
+    'CAD2,Other,Other title,Other citation,,page_2',
+    ',Excluded,Title,Citation,,page_3',
+  ].join('\n');
+  const attributes = {
+    status: true,
+    field_page_mode: 'public',
+    field_page_id: 'egl_241',
+    field_data_type: 'direct_csv',
+    field_data_points: csv,
+  };
+  const fetch = async (url) => {
+    assert.equal(url.searchParams.get('filter[field_page_id]'), 'egl_241');
+    assert.match(url.searchParams.get('fields[node--research_page]'), /status/);
+    return Response.json({ data: [{ attributes }] });
+  };
+
+  const result = await importEffectorCatalog(app, fetch);
+  const saved = readFileSync(result.destination, 'utf8');
+  const catalog = JSON.parse(saved);
+  assert.equal(result.imported, 2);
+  assert.equal(result.skipped, 1);
+  assert.deepEqual(catalog.entries[0], {
+    traitIds: ['CAD', 'T2D'],
+    name: 'List',
+    title: 'Title',
+    citation: 'Citation',
+    pmid: '123',
+    pageId: 'page_1',
+  });
+  assert.equal(catalog.entries.filter(({ traitIds }) => traitIds.includes('CAD')).length, 1);
+
+  attributes.status = false;
+  await assert.rejects(importEffectorCatalog(app, fetch), /unpublished/);
+  assert.equal(readFileSync(result.destination, 'utf8'), saved);
+  attributes.status = true;
+  attributes.field_page_mode = 'dev';
+  await assert.rejects(importEffectorCatalog(app, fetch), /not public/);
+  assert.equal(readFileSync(result.destination, 'utf8'), saved);
+  attributes.field_page_mode = 'public';
+  attributes.field_data_points = csv.replace('page_1', 'javascript:alert(1)');
+  await assert.rejects(importEffectorCatalog(app, fetch));
+  assert.equal(readFileSync(result.destination, 'utf8'), saved);
+});
+
+test('rejects shared-package dependencies on application packages', async (t) => {
+  const root = createWorkspace(t);
+  createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+  createPackage(root, 'packages', 'shared', {
+    name: '@dig-portal/shared',
+    dependencies: { '@dig-portal/cmd': 'workspace:*', alias: 'file:../../apps/cmd' },
+  });
+  writeFileSync(path.join(root, 'packages', 'shared', 'index.ts'), 'export const value = 1;\n');
+
+  const errors = await validateDependencyDirection(root, discoverPackages(root));
+  assert.equal(errors.length, 2);
+  assert.match(errors.join('\n'), /@dig-portal\/cmd/);
+  assert.match(errors.join('\n'), /alias/);
+  assert.equal(await main(['validate'], root), 1);
+});
+
+test('rejects application imports in TypeScript and Vue shared code', async (t) => {
+  const root = createWorkspace(t);
+  createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+  createPackage(root, 'packages', 'shared', { name: '@dig-portal/shared' });
+  createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+  writeFileSync(path.join(root, 'apps', 'cmd', 'data.ts'), 'export type Data = string; export const data = 1;\n');
+  mkdirSync(path.join(root, 'apps', 'cmd', '.nuxt'));
+  writeFileSync(path.join(root, 'apps', 'cmd', '.nuxt', 'generated.ts'), 'export const generated = 1;\n');
+  writeFileSync(
+    path.join(root, 'packages', 'shared', 'index.ts'),
+    "import type { Data } from '../../apps/cmd/data';\nexport { data } from '@dig-portal/cmd/private';\nexport { generated } from '../../apps/cmd/.nuxt/generated';\nexport const load = () => import('~/composables/example');\nexport { value } from '#shared/example';\nexport type Value = Data;\n",
+  );
+  writeFileSync(
+    path.join(root, 'layers', 'platform', 'Example.vue'),
+    '<script setup lang="ts">import { data } from \'../../apps/cmd/data\';</script>\n',
+  );
+
+  const errors = await validateDependencyDirection(root, discoverPackages(root));
+  assert.equal(errors.length, 6);
+  assert.match(errors.join('\n'), /index\.ts.*\.\.\/\.\.\/apps\/cmd\/data/);
+  assert.match(errors.join('\n'), /@dig-portal\/cmd\/private/);
+  assert.match(errors.join('\n'), /apps\/cmd\/\.nuxt\/generated/);
+  assert.match(errors.join('\n'), /~\/composables\/example/);
+  assert.match(errors.join('\n'), /#shared\/example/);
+  assert.match(errors.join('\n'), /Example\.vue.*apps\/cmd\/data/);
+});
+
+test('allows shared dependencies and applications importing shared code', async (t) => {
+  const root = createWorkspace(t);
+  createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+  createPackage(root, 'packages', 'domain', { name: '@dig-portal/domain' });
+  createPackage(root, 'layers', 'platform', {
+    name: '@dig-portal/platform',
+    dependencies: { '@dig-portal/domain': 'workspace:*' },
+  });
+  mkdirSync(path.join(root, 'packages', 'domain', 'node_modules', 'example'), { recursive: true });
+  writeFileSync(
+    path.join(root, 'packages', 'domain', 'node_modules', 'example', 'index.js'),
+    "export { value } from '../../../../apps/cmd/index';\n",
+  );
+  writeFileSync(path.join(root, 'packages', 'domain', 'index.ts'), 'export const value = 1;\n');
+  writeFileSync(path.join(root, 'layers', 'platform', 'index.ts'), "export { value } from '../../packages/domain/index';\n");
+  writeFileSync(path.join(root, 'apps', 'cmd', 'index.ts'), "export { value } from '../../packages/domain/index';\n");
+
+  assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
 });

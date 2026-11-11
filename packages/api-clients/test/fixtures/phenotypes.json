@@ -1,0 +1,17 @@
+{
+  "count": 936,
+  "data": [
+    {
+      "name": "CAD",
+      "description": "Coronary artery disease (CAD)",
+      "group": "CARDIOVASCULAR",
+      "dichotomous": 1
+    },
+    {
+      "name": "T2D",
+      "description": "Type 2 diabetes (T2D)",
+      "group": "GLYCEMIC",
+      "dichotomous": 1
+    }
+  ]
+}

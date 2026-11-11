@@ -3,6 +3,7 @@
 node_modules/
 .nuxt/
 .output/
+.data/
 dist/
 
 # Synced from broadinstitute/dig-portal-tooling via `node codex/install.mjs` — do not commit copies

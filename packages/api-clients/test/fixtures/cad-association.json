@@ -1,0 +1,49 @@
+{
+  "index": "global-associations",
+  "count": 1,
+  "page": 1,
+  "limit": 1,
+  "restricted": 0,
+  "progress": {
+    "bytes_read": 1286,
+    "bytes_total": 376384,
+    "filtered": 0
+  },
+  "data": [
+    {
+      "varId": "9:22098574:A:G",
+      "alignment": 1.0,
+      "alt": "G",
+      "ancestry": "Mixed",
+      "beta": 0.175,
+      "chromosome": "9",
+      "clumpEnd": 22188475,
+      "clumpStart": 21683805,
+      "dataset": "bottom-line_analysis_CAD_Mixed",
+      "inMetaTypes": "bottom-line;min_p;largest",
+      "leadSNP": true,
+      "n": 1456880.0,
+      "pValue": 5e-324,
+      "phenotype": "CAD",
+      "position": 22098574,
+      "posteriorProbability": 0.020710713878804247,
+      "reference": "A",
+      "source": "bottom-line_analysis_common",
+      "stdErr": 0.0027,
+      "clump": "110_bottom-line_analysis_common",
+      "dbSNP": "rs4977574",
+      "consequence": "intron_variant",
+      "nearest": ["CDKN2B"],
+      "minorAllele": "G",
+      "maf": 0.492,
+      "af": {
+        "AA": 0.1822,
+        "EA": 0.4847,
+        "EU": 0.492,
+        "HS": 0.4511,
+        "SA": 0.5233
+      }
+    }
+  ],
+  "continuation": null
+}

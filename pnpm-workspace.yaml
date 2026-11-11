@@ -3,3 +3,12 @@ packages:
   - packages/*
   - layers/*
   - tooling/*
+
+onlyBuiltDependencies:
+  - better-sqlite3
+
+packageExtensions:
+  dependency-cruiser@18.7.2:
+    dependencies:
+      "@vue/compiler-sfc": 3.5.45
+      typescript: 5.9.3

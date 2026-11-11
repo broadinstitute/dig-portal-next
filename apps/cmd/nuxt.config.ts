@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   buildId,
   compatibilityDate: '2026-11-10',
   extends: ['@dig-portal/platform'],
-  modules: ['@nuxt/ui'],
+  modules: ['@nuxt/content', '@nuxt/ui'],
   css: ['~/assets/css/main.css'],
   ui: { fonts: false },
   app: { head: { title: portal.title } },

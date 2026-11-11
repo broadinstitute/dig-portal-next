@@ -22,6 +22,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm portal validate
       - run: pnpm portal test
+      - run: pnpm portal typecheck
       - run: pnpm portal typecheck cmd
       - run: pnpm portal build cmd
       - run: pnpm portal test cmd

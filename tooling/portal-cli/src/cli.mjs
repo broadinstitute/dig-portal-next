@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import spawn from 'cross-spawn';
+import { validateDependencyDirection } from './boundaries.mjs';
+import { importEffectorCatalog } from './content-import.mjs';
 
 const workspacePackages = ['apps', 'packages', 'layers', 'tooling'];
 
@@ -100,15 +102,19 @@ function listPortals(root) {
   return 0;
 }
 
+function findPortal(root, portalId) {
+  return discoverPackages(root).find(({ manifestPath, workspace }) =>
+    workspace === 'apps' && path.basename(path.dirname(manifestPath)) === portalId,
+  );
+}
+
 function runPortalCommand(root, command, portalId, args) {
   if (!portalId || !/^[a-z0-9][a-z0-9_-]*$/.test(portalId)) {
     console.error(`Usage: pnpm portal ${command} <portal-id> [arguments]`);
     return 2;
   }
 
-  const portal = discoverPackages(root).find(({ manifestPath, workspace }) =>
-    workspace === 'apps' && path.basename(path.dirname(manifestPath)) === portalId,
-  );
+  const portal = findPortal(root, portalId);
   if (!portal) {
     console.error(`Portal "${portalId}" was not found.`);
     return 1;
@@ -118,15 +124,25 @@ function runPortalCommand(root, command, portalId, args) {
     return 1;
   }
 
-  const result = spawn.sync('pnpm', ['--dir', path.dirname(portal.manifestPath), 'run', command, ...args], {
-    cwd: root,
-    stdio: 'inherit',
-  });
-  if (result.error) {
-    console.error(`Could not run "${command}" for "${portalId}": ${result.error.message}`);
+  if (command === 'build'
+    && (typeof portal.manifest.scripts?.['validate-content'] !== 'string'
+      || !portal.manifest.scripts['validate-content'].trim())) {
+    console.error(`Portal "${portalId}" must define a "validate-content" script before it can be built.`);
     return 1;
   }
-  return result.status ?? 1;
+
+  const commands = command === 'build' ? ['validate-content', command] : [command];
+  for (const script of commands) {
+    const result = spawn.sync('pnpm', [
+      '--dir', path.dirname(portal.manifestPath), 'run', script, ...(script === command ? args : []),
+    ], { cwd: root, stdio: 'inherit' });
+    if (result.error) {
+      console.error(`Could not run "${script}" for "${portalId}": ${result.error.message}`);
+      return 1;
+    }
+    if (result.status !== 0) return result.status ?? 1;
+  }
+  return 0;
 }
 
 function runTests(root) {
@@ -141,10 +157,29 @@ function runTests(root) {
     return 1;
   }
 
-  return result.status ?? 1;
+  if (result.status !== 0) return result.status ?? 1;
+  return runSharedPackageScripts(root, 'test');
 }
 
-export function main(args, root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')) {
+export function runSharedPackageScripts(root, command) {
+  for (const { manifest, manifestPath, workspace } of discoverPackages(root)) {
+    if (!['packages', 'layers'].includes(workspace)) continue;
+    if (typeof manifest.scripts?.[command] !== 'string' || !manifest.scripts[command].trim()) continue;
+
+    const result = spawn.sync('pnpm', ['--dir', path.dirname(manifestPath), 'run', command], {
+      cwd: root,
+      stdio: 'inherit',
+    });
+    if (result.error) {
+      console.error(`Could not run "${command}" for "${manifest.name}": ${result.error.message}`);
+      return 1;
+    }
+    if (result.status !== 0) return result.status ?? 1;
+  }
+  return 0;
+}
+
+export async function main(args, root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')) {
   const [command, ...rest] = args;
 
   if ((command === 'list' || command === 'validate') && rest.length > 0) {
@@ -155,19 +190,49 @@ export function main(args, root = path.resolve(path.dirname(fileURLToPath(import
   if (command === 'list') return listPortals(root);
   if (command === 'validate') {
     const errors = validateWorkspace(root);
+    if (errors.length === 0) {
+      try {
+        errors.push(...await validateDependencyDirection(root, discoverPackages(root)));
+      } catch (error) {
+        console.error(`error: Dependency analysis failed: ${error.message}`);
+        return 1;
+      }
+    }
     if (errors.length > 0) {
       for (const error of errors) console.error(`error: ${error}`);
       return 1;
     }
-    console.log('Workspace validation passed.');
+    console.log('Workspace and explicit dependency checks passed.');
     return 0;
   }
   if (command === 'test' && rest.length === 0) return runTests(root);
+  if (command === 'typecheck' && rest.length === 0) return runSharedPackageScripts(root, 'typecheck');
+  if (command === 'content:import') {
+    const [portalId, dataset] = rest;
+    if (rest.length !== 2 || !/^[a-z0-9][a-z0-9_-]*$/.test(portalId ?? '') || dataset !== 'effector-genes') {
+      console.error('Usage: pnpm portal content:import <portal-id> effector-genes');
+      return 2;
+    }
+    const portal = findPortal(root, portalId);
+    if (!portal || typeof portal.manifest.scripts?.['validate-content'] !== 'string'
+      || !portal.manifest.scripts['validate-content'].trim()) {
+      console.error(`Portal "${portalId}" was not found or does not support content validation.`);
+      return 1;
+    }
+    try {
+      const { destination, imported, skipped } = await importEffectorCatalog(path.dirname(portal.manifestPath));
+      console.log(`Imported ${imported} effector lists into ${destination}; skipped ${skipped} without trait IDs.`);
+      return 0;
+    } catch (error) {
+      console.error(`Effector-list import failed: ${error.message}`);
+      return 1;
+    }
+  }
   if (['dev', 'typecheck', 'test', 'build'].includes(command)) {
     return runPortalCommand(root, command, rest[0], rest.slice(1));
   }
   if (command === '--help' || command === '-h' || command === undefined) {
-    console.log('Usage: pnpm portal <list|validate|test|dev|typecheck|build> [portal-id] [arguments]');
+    console.log('Usage: pnpm portal <list|validate|test|dev|typecheck|build|content:import> [portal-id] [arguments]');
     return 0;
   }
 
@@ -176,5 +241,5 @@ export function main(args, root = path.resolve(path.dirname(fileURLToPath(import
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  process.exitCode = main(process.argv.slice(2));
+  process.exitCode = await main(process.argv.slice(2));
 }

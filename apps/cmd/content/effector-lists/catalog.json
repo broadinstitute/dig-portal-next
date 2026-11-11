@@ -1,0 +1,1147 @@
+{
+  "sourceId": "egl_241",
+  "entries": [
+    {
+      "traitIds": [
+        "Adiponectin"
+      ],
+      "name": "Adiponectin predicted effector genes (Sarsani V et al. 2023)",
+      "title": "A cross-ancestry genome-wide meta-analysis, fine-mapping, and gene prioritization approach to characterize the genetic architecture of adiponectin.",
+      "citation": "HGG Adv. 2024 Jan 11;5(1):100252. doi: 10.1016/j.xhgg.2023.100252.",
+      "pmid": "37859345",
+      "pageId": "Sarsani_adiponectin_481"
+    },
+    {
+      "traitIds": [
+        "Men"
+      ],
+      "name": "Age at menarche predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_menarche_347"
+    },
+    {
+      "traitIds": [
+        "MP"
+      ],
+      "name": "Age at menopause predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_menopause_355"
+    },
+    {
+      "traitIds": [
+        "AMD"
+      ],
+      "name": "Age-related macular degeneration predicted effector genes (Orozco et al., 2020)",
+      "title": "Integration of eQTL and a Single-Cell Atlas in the Human Eye Identifies Causal Genes for Age-Related Macular Degeneration.",
+      "citation": "Cell Rep. 2020 Jan 28;30(4):1246-1259.e6. doi: 10.1016/j.celrep.2019.12.082.",
+      "pmid": "31995762",
+      "pageId": "orozco_amd_196"
+    },
+    {
+      "traitIds": [
+        "AD"
+      ],
+      "name": "Alzheimer's disease predicted effector genes (Bellenguez et al., 2022)",
+      "title": "New insights into the genetic etiology of Alzheimer’s disease and related dementias",
+      "citation": "Nat Genet. 2022 Apr;54(4):412-436. doi: 10.1038/s41588-022-01024-z.",
+      "pmid": "35379992",
+      "pageId": "bellenguez_alzheimers_197"
+    },
+    {
+      "traitIds": [
+        "Stroke"
+      ],
+      "name": "Stroke predicted effector genes (Malik R et al. 2018)",
+      "title": "Multiancestry genome-wide association study of 520,000 subjects identifies 32 loci associated with stroke and stroke subtypes",
+      "citation": "Nat Genet. 2018 Apr;50(4):524-537. doi: 10.1038/s41588-018-0058-3.",
+      "pmid": "29531354",
+      "pageId": "malik_stroke_192"
+    },
+    {
+      "traitIds": [
+        "Stroke"
+      ],
+      "name": "Stroke predicted effector genes (Mishra A et al. 2022)",
+      "title": "Stroke genetics informs drug discovery and risk prediction across ancestries",
+      "citation": "Nature. 2022 Nov;611(7934):115-123. doi: 10.1038/s41586-022-05165-3.",
+      "pmid": "36180795",
+      "pageId": "mishra_stroke_256"
+    },
+    {
+      "traitIds": [
+        "Asthma"
+      ],
+      "name": "Asthma predicted effector genes (Valette K et al. 2021)",
+      "title": "Prioritization of candidate causal genes for asthma in susceptibility loci derived from UK Biobank",
+      "citation": "Commun Biol. 2021 Jun 8;4(1):700. doi: 10.1038/s42003-021-02227-6.",
+      "pmid": "34103634",
+      "pageId": "valette_asthma_287"
+    },
+    {
+      "traitIds": [
+        "Asthma"
+      ],
+      "name": "Asthma predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_asthma_364"
+    },
+    {
+      "traitIds": [
+        "AF"
+      ],
+      "name": "Atrial fibrillation predicted effector genes (Roselli C et al. 2018)",
+      "title": "Multi-ethnic genome-wide association study for atrial fibrillation",
+      "citation": "Nat Genet. 2018 Jun 11;50(9):1225-1233. doi: 10.1038/s41588-018-0133-9.",
+      "pmid": "29892015",
+      "pageId": "roselli_af_174"
+    },
+    {
+      "traitIds": [
+        "DBP",
+        "SBP",
+        "PP"
+      ],
+      "name": "Blood pressure predicted effector genes (Kamali Z et al. 2022)",
+      "title": "Large-Scale Multi-Omics Studies Provide New Insights into Blood Pressure Regulation",
+      "citation": "Int J Mol Sci. 2022 Jul 8;23(14):7557. doi: 10.3390/ijms23147557.",
+      "pmid": "35886906",
+      "pageId": "kamali_172"
+    },
+    {
+      "traitIds": [
+        "DBP",
+        "SBP",
+        "PP"
+      ],
+      "name": "Kidney-expressed blood pressure predicted effector genes (Eales et al. 2021)",
+      "title": "Uncovering genetic mechanisms of hypertension through multi-omic analysis of the kidney",
+      "citation": "Nat Genet. 2021 May;53(5):630-637. doi: 10.1038/s41588-021-00835-w.",
+      "pmid": "33958779",
+      "pageId": "eales_blood_pressure_175"
+    },
+    {
+      "traitIds": [
+        "BFP"
+      ],
+      "name": "Body fat percentage predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_BFP_358"
+    },
+    {
+      "traitIds": [
+        "BMI"
+      ],
+      "name": "Body mass index predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_BMI_359"
+    },
+    {
+      "traitIds": [
+        "eBMD"
+      ],
+      "name": "Bone mineral density predicted effector genes (Al-Barghouthi BM et al. 2022)",
+      "title": "Transcriptome-wide association study and eQTL colocalization identify potentially causal genes responsible for human bone mineral density GWAS associations",
+      "citation": "Elife. 2022 Nov 23;11:e77285. doi: 10.7554/eLife.77285.",
+      "pmid": "36416764",
+      "pageId": "Al-Barghouthi_BMD_337"
+    },
+    {
+      "traitIds": [
+        "Ca"
+      ],
+      "name": "Calcium level predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_calcium_260"
+    },
+    {
+      "traitIds": [
+        "T2D",
+        "WHR",
+        "HDL",
+        "TG",
+        "BMI"
+      ],
+      "name": "Cardiometabolic trait predicted effector genes (Gloudemans MJ et al. 2022)",
+      "title": "Integration of genetic colocalizations with physiological and pharmacological perturbations identifies cardiometabolic disease genes",
+      "citation": "Genome Med. 2022 Mar 15;14(1):31. doi: 10.1186/s13073-022-01036-8.",
+      "pmid": "35292083",
+      "pageId": "gloudemans_176"
+    },
+    {
+      "traitIds": [
+        "COPD"
+      ],
+      "name": "Chronic obstructive pulmonary disease predicted effector genes (Shrine N et al. 2019)",
+      "title": "New genetic signals for lung function highlight pathways and chronic obstructive pulmonary disease associations across multiple ancestries",
+      "citation": "Nat Genet. 2019 Mar;51(3):481-493. doi: 10.1038/s41588-018-0321-7.",
+      "pmid": "30804560",
+      "pageId": "Shrine_COPD_345"
+    },
+    {
+      "traitIds": [
+        "SleepChronotype"
+      ],
+      "name": "Morning person chronotype predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_morning_371"
+    },
+    {
+      "traitIds": [
+        "CAD"
+      ],
+      "name": "CARDIoGRAMplusC4D CAD predicted effector genes (Aragam K et al. 2022)",
+      "title": "Discovery and systematic characterization of risk variants and genes for coronary artery disease in over a million participants",
+      "citation": "Nat Genet. 2022 Dec;54(12):1803-1815. doi: 10.1038/s41588-022-01233-6.",
+      "pmid": "36474045",
+      "pageId": "cardiogram_165"
+    },
+    {
+      "traitIds": [
+        "SeverevNonHospC19",
+        "SevereC19vAll",
+        "HospvNonHospC19",
+        "HospC19vAll",
+        "C19vNeg",
+        "C19vAll",
+        "PredC19vPredNoC19"
+      ],
+      "name": "COVID-19 susceptibility and severity predicted effector genes (Thieke MJ et al. 2021)",
+      "title": "Prioritisation of Candidate Genes Underpinning COVID-19 Host Genetic Traits Based on High-Resolution 3D Chromosomal Topology",
+      "citation": "Front Genet. 2021 Oct 25;12:745672. doi: 10.3389/fgene.2021.745672. eCollection 2021.",
+      "pmid": "34759959",
+      "pageId": "COVID-19_effectors_COGS"
+    },
+    {
+      "traitIds": [
+        "DBP"
+      ],
+      "name": "Diastolic blood pressure predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_dbp_261"
+    },
+    {
+      "traitIds": [
+        "DBP"
+      ],
+      "name": "Diastolic blood pressure predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_DBP_399"
+    },
+    {
+      "traitIds": [
+        "DirectBilirubin"
+      ],
+      "name": "Direct bilirubin predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_bilirubin_258"
+    },
+    {
+      "traitIds": [
+        "eGFRcrea"
+      ],
+      "name": "Estimated glomerular filtration rate (eGFR) predicted effector genes (Liu H et al. 2022)",
+      "title": "Epigenomic and transcriptomic analyses define core cell types, genes and targetable mechanisms for kidney disease",
+      "citation": "Nat Genet. 2022 Jul;54(7):950-962. doi: 10.1038/s41588-022-01097-w.",
+      "pmid": "35710981",
+      "pageId": "Liu_2022_eGFR"
+    },
+    {
+      "traitIds": [
+        "eGFRcrea"
+      ],
+      "name": "Estimated glomerular filtration rate (eGFR) predicted effector genes (Stanzick KJ et al. 2021)",
+      "title": "Discovery and prioritization of variants and genes for kidney function in >1.2 million individuals",
+      "citation": "Nat Commun. 2021 Jul 16;12(1):4350. doi: 10.1038/s41467-021-24491-0.",
+      "pmid": "34272381",
+      "pageId": "stanzick_169"
+    },
+    {
+      "traitIds": [
+        "eGFR-creat"
+      ],
+      "name": "Estimated glomerular filtration rate (eGFR) predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_eGFR_402"
+    },
+    {
+      "traitIds": [
+        "eGFRcys"
+      ],
+      "name": "Estimated glomerular filtration rate (cystatin C; eGFRcys) predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_eGFRcys_370"
+    },
+    {
+      "traitIds": [
+        "EosinCount"
+      ],
+      "name": "Eosinophil count predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_eosinophil_403"
+    },
+    {
+      "traitIds": [
+        "FGadjBMI"
+      ],
+      "name": "Fasting glucose level predicted effector genes (Atla G et al. 2022)",
+      "title": "Genetic regulation of RNA splicing in human pancreatic islets.",
+      "citation": "Genome Biol . 2022 Sep 15;23(1):196. doi: 10.1186/s13059-022-02757-0.",
+      "pmid": "36109769",
+      "pageId": "Atla_FG_530"
+    },
+    {
+      "traitIds": [
+        "FIadjBMI"
+      ],
+      "name": "Fasting insulin level predicted effector genes (Atla G et al. 2022)",
+      "title": "Genetic regulation of RNA splicing in human pancreatic islets.",
+      "citation": "Genome Biol . 2022 Sep 15;23(1):196. doi: 10.1186/s13059-022-02757-0.",
+      "pmid": "36109769",
+      "pageId": "Atla_FI_566"
+    },
+    {
+      "traitIds": [
+        "FEV1toFVC"
+      ],
+      "name": "FEV1-FVC ratio predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_FEV1FVC_365"
+    },
+    {
+      "traitIds": [
+        "SleepInsomnia"
+      ],
+      "name": "Insomnia predicted effector genes (Watanabe K et al. 2022)",
+      "title": "Genome-wide meta-analysis of insomnia prioritizes genes associated with metabolic and psychiatric pathways",
+      "citation": "Nat Genet. 2022 Aug;54(8):1125-1132. doi: 10.1038/s41588-022-01124-w.",
+      "pmid": "35835914",
+      "pageId": "watanabe_insomnia_195"
+    },
+    {
+      "traitIds": [
+        "SleepInsomnia"
+      ],
+      "name": "Insomnia predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_insomnia_413"
+    },
+    {
+      "traitIds": [
+        "GGT"
+      ],
+      "name": "Gamma-glutamyl transferase (GGT) predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_GGT_404"
+    },
+    {
+      "traitIds": [
+        "HBA1C"
+      ],
+      "name": "HbA1c (glycated hemoglobin) level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_HbA1c_407"
+    },
+    {
+      "traitIds": [
+        "HDL"
+      ],
+      "name": "GLGC HDL cholesterol predicted effector genes (Kanoni S et al. 2022)",
+      "title": "Implicating genes, pleiotropy, and sexual dimorphism at blood lipid loci through multi-ancestry meta-analysis",
+      "citation": "Genome Biol. 2022 Dec 27;23(1):268. doi: 10.1186/s13059-022-02837-1.",
+      "pmid": "36575460",
+      "pageId": "GLGC_HDL_137"
+    },
+    {
+      "traitIds": [
+        "HDL"
+      ],
+      "name": "HDL cholesterol level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_HDL_408"
+    },
+    {
+      "traitIds": [
+        "HF"
+      ],
+      "name": "Heart failure predicted effector genes (Levin MG et al. 2022)",
+      "title": "Genome-wide association and multi-trait analyses characterize the common genetic architecture of heart failure",
+      "citation": "Nat Commun. 2022 Nov 14;13(1):6914. doi: 10.1038/s41467-022-34216-6.",
+      "pmid": "36376295",
+      "pageId": "levin_heart_failure_269"
+    },
+    {
+      "traitIds": [
+        "HF"
+      ],
+      "name": "Heart failure predicted effector genes (Shah S et al. 2022)",
+      "title": "Genome-wide association and Mendelian randomisation analysis provide insights into the pathogenesis of heart failure",
+      "citation": "Nat Commun. 2020 Jan 9;11(1):163. doi: 10.1038/s41467-019-13690-5.",
+      "pmid": "31919418",
+      "pageId": "shah_282"
+    },
+    {
+      "traitIds": [
+        "eBMD"
+      ],
+      "name": "Estimated bone mineral density predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_ebmd_262"
+    },
+    {
+      "traitIds": [
+        "eBMD"
+      ],
+      "name": "Estimated bone mineral density predicted effector genes (Chesi A et al. 2019)",
+      "title": "Genome-scale Capture C promoter interactions implicate effector genes at GWAS loci for bone mineral density",
+      "citation": "Nat Commun. 2019 Mar 19;10(1):1260. doi: 10.1038/s41467-019-09302-x.",
+      "pmid": "30890710",
+      "pageId": "chesi_ebmd_382"
+    },
+    {
+      "traitIds": [
+        "eBMD"
+      ],
+      "name": "Estimated bone mineral density predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_eBMD_401"
+    },
+    {
+      "traitIds": [
+        "HEIGHT"
+      ],
+      "name": "Adult height predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_height_362"
+    },
+    {
+      "traitIds": [
+        "Hematocrit"
+      ],
+      "name": "Hematocrit predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_hematocrit_409"
+    },
+    {
+      "traitIds": [
+        "Hb"
+      ],
+      "name": "Hemoglobin level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_Hb_406"
+    },
+    {
+      "traitIds": [
+        "Thyroid"
+      ],
+      "name": "Hypothyroidism predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_thyroid_268"
+    },
+    {
+      "traitIds": [
+        "Thyroid"
+      ],
+      "name": "Hypothyroidism predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_hypothyroid_410"
+    },
+    {
+      "traitIds": [
+        "IBD"
+      ],
+      "name": "Inflammatory bowel disease predicted effector genes in colonoids (Lasconi C et al. 2021)",
+      "title": "Variant-to-Gene-Mapping Analyses Reveal a Role for the Hypothalamus in Genetic Susceptibility to Inflammatory Bowel Disease",
+      "citation": "Cell Mol Gastroenterol Hepatol. 2021;11(3):667-682. doi: 10.1016/j.jcmgh.2020.10.004.",
+      "pmid": "33069917",
+      "pageId": "Lasconi_IBD_colonoids_326"
+    },
+    {
+      "traitIds": [
+        "IBD"
+      ],
+      "name": "Inflammatory bowel disease predicted effector genes in hypothalamic-like neurons (Lasconi C et al. 2021)",
+      "title": "Variant-to-Gene-Mapping Analyses Reveal a Role for the Hypothalamus in Genetic Susceptibility to Inflammatory Bowel Disease",
+      "citation": "Cell Mol Gastroenterol Hepatol. 2021;11(3):667-682. doi: 10.1016/j.jcmgh.2020.10.004.",
+      "pmid": "33069917",
+      "pageId": "Lasconi_IBD_HN_325"
+    },
+    {
+      "traitIds": [
+        "IBD"
+      ],
+      "name": "Inflammatory bowel disease predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_IBD_411"
+    },
+    {
+      "traitIds": [
+        "IGF1"
+      ],
+      "name": "Insulin-like growth factor 1 (IGF1) level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_IGF1_412"
+    },
+    {
+      "traitIds": [
+        "eGFRcrea",
+        "KExcretion",
+        "NaExcretion",
+        "SBP",
+        "UACR",
+        "Urate"
+      ],
+      "name": "Kidney function predicted effector genes (Sheng X et al. 2021)",
+      "title": "Mapping the genetic architecture of human traits to cell types in the kidney identifies mechanisms of disease and potential treatments",
+      "citation": "Nat Genet. 2021 Sep;53(9):1322-1333. doi: 10.1038/s41588-021-00909-9.",
+      "pmid": "34385711",
+      "pageId": "sheng_egfr_190"
+    },
+    {
+      "traitIds": [
+        "LDL"
+      ],
+      "name": "LDL cholesterol predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_ldl_253"
+    },
+    {
+      "traitIds": [
+        "LDL"
+      ],
+      "name": "GLGC LDL cholesterol predicted effector genes (Kanoni S et al. 2022)",
+      "title": "Implicating genes, pleiotropy, and sexual dimorphism at blood lipid loci through multi-ancestry meta-analysis",
+      "citation": "Genome Biol. 2022 Dec 27;23(1):268. doi: 10.1186/s13059-022-02837-1.",
+      "pmid": "36575460",
+      "pageId": "GLGC_LDL_150"
+    },
+    {
+      "traitIds": [
+        "LDL"
+      ],
+      "name": "LDL cholesterol predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_LDL_414"
+    },
+    {
+      "traitIds": [
+        "LipoproteinA"
+      ],
+      "name": "Lipoprotein A predicted effector genes - (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_LipoA_415"
+    },
+    {
+      "traitIds": [
+        "LOG_TG"
+      ],
+      "name": "GLGC log-triglyceride predicted effector genes (Kanoni S et al. 2022)",
+      "title": "Implicating genes, pleiotropy, and sexual dimorphism at blood lipid loci through multi-ancestry meta-analysis",
+      "citation": "Genome Biol. 2022 Dec 27;23(1):268. doi: 10.1186/s13059-022-02837-1.",
+      "pmid": "36575460",
+      "pageId": "GLGC_logTG_152"
+    },
+    {
+      "traitIds": [
+        "LymphoCount"
+      ],
+      "name": "Lymphocyte count predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_Lym_422"
+    },
+    {
+      "traitIds": [
+        "MAP"
+      ],
+      "name": "Mean arterial pressure predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_MAP_422"
+    },
+    {
+      "traitIds": [
+        "MeanCorpHb"
+      ],
+      "name": "Mean corpuscular hemoglobin predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_MCH_423"
+    },
+    {
+      "traitIds": [
+        "MeanCorpHbCount"
+      ],
+      "name": "Mean corpuscular hemoglobin concentration predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_MCHC_425"
+    },
+    {
+      "traitIds": [
+        "MeanCorpVol"
+      ],
+      "name": "Mean corpuscular volume predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_MCV_427"
+    },
+    {
+      "traitIds": [
+        "MonoCount"
+      ],
+      "name": "Monocyte count predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_mono_429"
+    },
+    {
+      "traitIds": [
+        "MultipleSclerosis"
+      ],
+      "name": "Multiple sclerosis predicted effector genes (IMSGC 2019)",
+      "title": "Multiple sclerosis genomic map implicates peripheral immune cells and microglia in susceptibility.",
+      "citation": "Science. 2019 Sep 27;365(6460):eaav7188. doi: 10.1126/science.aav7188.",
+      "pmid": "31604244",
+      "pageId": "IMSGC_MS_456"
+    },
+    {
+      "traitIds": [
+        "NAFLD"
+      ],
+      "name": "Nonalcoholic fatty liver disease (NAFLD) predicted effector genes (Vujkovic M et al. 2022)",
+      "title": "A multiancestry genome-wide association study of unexplained chronic ALT elevation as a proxy for nonalcoholic fatty liver disease with histological and radiological validation",
+      "citation": "Nat Genet. 2022 Jun;54(6):761-771. doi: 10.1038/s41588-022-01078-z.",
+      "pmid": "35654975",
+      "pageId": "vujkovic_NAFLD_305"
+    },
+    {
+      "traitIds": [
+        "Neuroticism"
+      ],
+      "name": "Neuroticism predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_neuroticism_430"
+    },
+    {
+      "traitIds": [
+        "NeutCount"
+      ],
+      "name": "Neutrophil count predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_neutro_431"
+    },
+    {
+      "traitIds": [
+        "nonHDL"
+      ],
+      "name": "GLGC non-HDL cholesterol predicted effector genes (Kanoni S et al. 2022)",
+      "title": "Implicating genes, pleiotropy, and sexual dimorphism at blood lipid loci through multi-ancestry meta-analysis",
+      "citation": "Genome Biol. 2022 Dec 27;23(1):268. doi: 10.1186/s13059-022-02837-1.",
+      "pmid": "36575460",
+      "pageId": "GLGC_nonHDL_151"
+    },
+    {
+      "traitIds": [
+        "BMI"
+      ],
+      "name": "Obesity predicted effector genes (Joslin AC et al. 2021)",
+      "title": "A functional genomics pipeline identifies pleiotropy and cross-tissue effects within obesity-associated GWAS loci",
+      "citation": "Nat Commun. 2021 Sep 6;12(1):5253. doi: 10.1038/s41467-021-25614-3.",
+      "pmid": "34489471",
+      "pageId": "joslin_bmi_170"
+    },
+    {
+      "traitIds": [
+        "ALLOA"
+      ],
+      "name": "Osteoarthritis predicted effector genes (Boer CG et al. 2021)",
+      "title": "Deciphering osteoarthritis genetics across 826,690 individuals from 9 populations",
+      "citation": "Cell. 2021 Nov 24;184(24):6003-6005. doi: 10.1016/j.cell.2021.11.003",
+      "pmid": "34450027",
+      "pageId": "OA_effectors_75"
+    },
+    {
+      "traitIds": [
+        "CRP"
+      ],
+      "name": "C-reactive protein predicted effector genes (Said S et al. 2022)",
+      "title": "Genetic analysis of over half a million people characterises C-reactive protein loci",
+      "citation": "Nat Commun. 2022 Apr 22;13(1):2198. doi: 10.1038/s41467-022-29650-5.",
+      "pmid": "35459240",
+      "pageId": "Said_CRP_306"
+    },
+    {
+      "traitIds": [
+        "POAG"
+      ],
+      "name": "Primary open-angle glaucoma predicted effector genes (Asefa NG et al. 2022)",
+      "title": "Bioinformatic Prioritization and Functional Annotation of GWAS-Based Candidate Genes for Primary Open-Angle Glaucoma",
+      "citation": "Genes (Basel). 2022 Jun 13;13(6):1055. doi: 10.3390/genes13061055.",
+      "pmid": "35741817",
+      "pageId": "Asefa_POAG_308"
+    },
+    {
+      "traitIds": [
+        "ProstateCancer"
+      ],
+      "name": "Prostate cancer predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_PrC_444"
+    },
+    {
+      "traitIds": [
+        "PulsePress"
+      ],
+      "name": "Pulse pressure predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_PP_445"
+    },
+    {
+      "traitIds": [
+        "BS"
+      ],
+      "name": "Random glucose level predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_random_glucose_259"
+    },
+    {
+      "traitIds": [
+        "BS"
+      ],
+      "name": "Blood glucose predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_glucose_405"
+    },
+    {
+      "traitIds": [
+        "RedCount"
+      ],
+      "name": "Red blood cell count predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_rbc_264"
+    },
+    {
+      "traitIds": [
+        "RBC"
+      ],
+      "name": "Red blood cell count predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_RBC_443"
+    },
+    {
+      "traitIds": [
+        "SCZ"
+      ],
+      "name": "Schizophrenia predicted effector genes (Trubetskoy V et al. 2022)",
+      "title": "Mapping genomic loci implicates genes and synaptic biology in schizophrenia",
+      "citation": "Nature. 2022 Apr;604(7906):502-508. doi: 10.1038/s41586-022-04434-5.",
+      "pmid": "35396580",
+      "pageId": "Trubetskoy_SCZ_324"
+    },
+    {
+      "traitIds": [
+        "Urate"
+      ],
+      "name": "Serum urate predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_urate_435"
+    },
+    {
+      "traitIds": [
+        "SerumUrea"
+      ],
+      "name": "Serum urea level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_urea_434"
+    },
+    {
+      "traitIds": [
+        "SHBG"
+      ],
+      "name": "Sex hormone binding globulin level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_SHBG_361"
+    },
+    {
+      "traitIds": [
+        "SleepChronotype",
+        "Insomnia",
+        "SleepLong",
+        "SleepShort"
+      ],
+      "name": "Sleep trait predicted effector genes in pancreatic islets (Lasconi C et al. 2022)",
+      "title": "Variant-to-gene-mapping analyses reveal a role for pancreatic islet cells in conferring genetic susceptibility to sleep-related traits.",
+      "citation": "Sleep. 2022 Aug;45(8): zsac109. doi: https://doi.org/10.1093/sleep/zsac109",
+      "pmid": "35537191",
+      "pageId": "Lasconi_sleep_317"
+    },
+    {
+      "traitIds": [
+        "SLE"
+      ],
+      "name": "Systemic lupus erythematosus (SLE) predicted effector genes (Su C et al. 2020)",
+      "title": "Mapping effector genes at lupus GWAS loci using promoter Capture-C in follicular helper T cells",
+      "citation": "Nat Commun. 2020 Jul 3;11(1):3294. doi: 10.1038/s41467-020-17089-5.",
+      "pmid": "32620744",
+      "pageId": "su_lupus_180"
+    },
+    {
+      "traitIds": [
+        "SBP"
+      ],
+      "name": "Systolic blood pressure predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_sbp_265"
+    },
+    {
+      "traitIds": [
+        "SBP"
+      ],
+      "name": "Systolic blood pressure (SBP) predicted effector genes (Sheng X et al. 2021)",
+      "title": "Mapping the genetic architecture of human traits to cell types in the kidney identifies mechanisms of disease and potential treatments",
+      "citation": "Nat Genet. 2021 Sep;53(9):1322-1333. doi: 10.1038/s41588-021-00909-9.",
+      "pmid": "34385711",
+      "pageId": "sheng_sbp_191"
+    },
+    {
+      "traitIds": [
+        "SBP"
+      ],
+      "name": "Systolic blood pressure predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_SBP_442"
+    },
+    {
+      "traitIds": [
+        "Testosterone_total"
+      ],
+      "name": "Female testosterone level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_testosteroneF_357"
+    },
+    {
+      "traitIds": [
+        "Testosterone_total"
+      ],
+      "name": "Male testosterone level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_testosteroneM_356"
+    },
+    {
+      "traitIds": [
+        "BILIRUBIN"
+      ],
+      "name": "Total bilirubin predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_TBil_439"
+    },
+    {
+      "traitIds": [
+        "CHOL"
+      ],
+      "name": "GLGC total cholesterol predicted effector genes (Kanoni S et al. 2022)",
+      "title": "Implicating genes, pleiotropy, and sexual dimorphism at blood lipid loci through multi-ancestry meta-analysis",
+      "citation": "Genome Biol. 2022 Dec 27;23(1):268. doi: 10.1186/s13059-022-02837-1.",
+      "pmid": "36575460",
+      "pageId": "GLGC_TC_153"
+    },
+    {
+      "traitIds": [
+        "CHOL"
+      ],
+      "name": "Total cholesterol predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_TC_438"
+    },
+    {
+      "traitIds": [
+        "TG"
+      ],
+      "name": "Triglyceride level predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_tg_267"
+    },
+    {
+      "traitIds": [
+        "TG"
+      ],
+      "name": "Triglyceride level predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_TG_437"
+    },
+    {
+      "traitIds": [
+        "T1D"
+      ],
+      "name": "Type 1 diabetes effector gene predictions (Gaulton KJ 2021)",
+      "title": "Unpublished",
+      "citation": "Gaulton KJ (2021)",
+      "pmid": null,
+      "pageId": "t1d_effector_genes"
+    },
+    {
+      "traitIds": [
+        "T1D"
+      ],
+      "name": "Type 1 diabetes predicted effector genes (Onengut-Gumuscu S and Rich SS 2022)",
+      "title": "Unpublished",
+      "citation": "Onengut-Gumuscu S and Rich SS (2022)",
+      "pmid": null,
+      "pageId": "T1D_UVa_168"
+    },
+    {
+      "traitIds": [
+        "T1D"
+      ],
+      "name": "Type 1 diabetes predicted effector genes (Atla G et al. 2022)",
+      "title": "Genetic regulation of RNA splicing in human pancreatic islets.",
+      "citation": "Genome Biol . 2022 Sep 15;23(1):196. doi: 10.1186/s13059-022-02757-0.",
+      "pmid": "36109769",
+      "pageId": "Atla_T1D_568"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes predicted effector genes (Mahajan A and McCarthy MI 2019)",
+      "title": "Unpublished",
+      "citation": "Mahajan A and McCarthy MI (2019)",
+      "pmid": null,
+      "pageId": "mccarthy_t2d_247"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes predicted effector genes - Effector index method (Forgetta V et al. 2022)",
+      "title": "An effector index to predict target genes at GWAS loci",
+      "citation": "Hum Genet. 2022 Feb 11. doi: 10.1007/s00439-022-02434-z.",
+      "pmid": "35147782",
+      "pageId": "richards_t2d_266"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes predicted effector genes - Integrated Classifier method (Majarian T and Manning A 2020)",
+      "title": "Unpublished",
+      "citation": "Majarian T and Manning A (2020)",
+      "pmid": null,
+      "pageId": "manningexp_t2d_245"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes predicted pancreatic cell type-specific effector genes (Su C et al. 2022)",
+      "title": "3D chromatin maps of the human pancreas reveal lineage-specific regulatory architecture of T2D risk",
+      "citation": "Cell Metab. 2022 Sep 6;34(9):1394-1409.e4. doi: 10.1016/j.cmet.2022.08.014.",
+      "pmid": "36070683",
+      "pageId": "cell-type-T2D"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes predicted effector genes (Mahajan A et al. 2022)",
+      "title": "Multi-ancestry genetic study of type 2 diabetes highlights the power of diverse populations for discovery and translation",
+      "citation": "Nat Genet. 2022 May;54(5):560-572. doi: 10.1038/s41588-022-01058-3.",
+      "pmid": "35551307",
+      "pageId": "mahajan_167"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes predicted effector genes (Rottner AK et al., 2023)",
+      "title": "A genome-wide CRISPR screen identifies CALCOCO2 as a regulator of beta cell function influencing type 2 diabetes risk",
+      "citation": "Nat Genet. 2023 Jan;55(1):54-65. doi: 10.1038/s41588-022-01261-2.",
+      "pmid": "36543916",
+      "pageId": "rottner_276"
+    },
+    {
+      "traitIds": [
+        "T2D"
+      ],
+      "name": "Type 2 diabetes (T2D) predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_T2D_441"
+    },
+    {
+      "traitIds": [
+        "T2DadjBMI"
+      ],
+      "name": "Type 2 diabetes (T2D) adjusted for BMI  predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_T2DadjBMI_440"
+    },
+    {
+      "traitIds": [
+        "T2DadjBMI"
+      ],
+      "name": "Type 2 diabetes predicted effector genes (Atla G et al. 2022)",
+      "title": "Genetic regulation of RNA splicing in human pancreatic islets.",
+      "citation": "Genome Biol . 2022 Sep 15;23(1):196. doi: 10.1186/s13059-022-02757-0.",
+      "pmid": "36109769",
+      "pageId": "Atla_T2D_567"
+    },
+    {
+      "traitIds": [
+        "UACR"
+      ],
+      "name": "Urinary albumin-to-creatinine ratio predicted effector genes (Teumer A et al. 2019)",
+      "title": "Genome-wide association meta-analyses and fine-mapping elucidate pathways influencing albuminuria",
+      "citation": "Nat Commun. 2019 Sep 11;10(1):4130. doi: 10.1038/s41467-019-11576-0.",
+      "pmid": "31511532",
+      "pageId": "Teumer_UACR_328"
+    },
+    {
+      "traitIds": [
+        "VitD"
+      ],
+      "name": "Vitamin D levels predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_VitD_433"
+    },
+    {
+      "traitIds": [
+        "WHRadjBMI"
+      ],
+      "name": "Waist-hip ratio (BMI-adjusted) predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_WHR_363"
+    },
+    {
+      "traitIds": [
+        "WEIGHT"
+      ],
+      "name": "Body weight predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_BW_360"
+    },
+    {
+      "traitIds": [
+        "WBC"
+      ],
+      "name": "White blood cell count predicted effector genes (Weeks EM et al. 2023)",
+      "title": "Leveraging polygenic enrichments of gene features to predict genes underlying complex traits and diseases",
+      "citation": "Nat Genet. 2023 Aug;55(8):1267-1276. doi: 10.1038/s41588-023-01443-6.",
+      "pmid": "37443254",
+      "pageId": "Weeks_WBC_432"
+    }
+  ]
+}

@@ -9,4 +9,5 @@
 /layers/ @qu-y
 /packages/domain/ @qu-y
 /packages/api-clients/ @qu-y
+/packages/content/ @qu-y
 /docs/decisions.md @qu-y
