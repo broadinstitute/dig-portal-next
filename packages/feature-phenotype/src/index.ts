@@ -44,3 +44,10 @@ export function findPhenotype(phenotypes: readonly Phenotype[], name: string | n
   if (!name) return null
   return phenotypes.find((phenotype) => phenotype.name === name) ?? null
 }
+
+export function effectorListsForPhenotype<T extends { readonly traitIds: readonly string[] }>(
+  entries: readonly T[],
+  phenotype: string | null,
+): T[] {
+  return phenotype ? entries.filter(({ traitIds }) => traitIds.includes(phenotype)) : []
+}

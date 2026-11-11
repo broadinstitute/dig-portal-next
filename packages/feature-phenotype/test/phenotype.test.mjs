@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ancestryOptions, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '../src/index.ts'
+import { ancestryOptions, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '../src/index.ts'
 
 test('reads legacy phenotype and ancestry query parameters', () => {
   assert.deepEqual(readPhenotypeRouteState({ phenotype: ' CAD ', ancestry: 'EU' }), { phenotype: 'CAD', ancestry: 'EU' })
@@ -27,4 +27,16 @@ test('finds phenotypes by exact name', () => {
   assert.equal(findPhenotype(phenotypes, 'CAD'), phenotypes[0])
   assert.equal(findPhenotype(phenotypes, 'cad'), null)
   assert.equal(findPhenotype(phenotypes, null), null)
+})
+
+test('matches effector lists by exact trait ID, including multi-trait entries', () => {
+  const entries = [
+    { traitIds: ['CAD'] },
+    { traitIds: ['CADinT2D'] },
+    { traitIds: ['T2D', 'CAD'] },
+  ]
+  assert.deepEqual(effectorListsForPhenotype(entries, 'CAD'), [entries[0], entries[2]])
+  assert.deepEqual(effectorListsForPhenotype(entries, 'T2D'), [entries[2]])
+  assert.deepEqual(effectorListsForPhenotype(entries, 'cad'), [])
+  assert.deepEqual(effectorListsForPhenotype(entries, null), [])
 })

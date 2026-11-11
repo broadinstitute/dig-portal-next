@@ -2,7 +2,7 @@
 
 Working status for the first production-bound slice: the CMD (`md`) phenotype page, using CAD as the reference example. This document tracks progress only; architecture decisions live in [`../decisions.md`](../decisions.md), which wins on any disagreement.
 
-_Last updated: 2026-11-10_
+_Last updated: 2026-11-11_
 
 ## Scope
 
@@ -27,7 +27,7 @@ Reuse is measured across legacy `src/views/*` pages.
 | --- | --- | --- | --- |
 | Search, ancestry selector, title/description | All pages | Build | Done for phenotypes. The selector is phenotype-only for now, because gene and region pages don't exist yet; the legacy search also covers those |
 | Manhattan / QQ plot images | Phenotype only, but simple (BioIndex raw PNGs) | Build | Done, with a per-plot "not available" state |
-| Bottom-line provenance modal | BottomLine page | Build | Not started |
+| Bottom-line provenance modal | BottomLine page | Build | Not started; the legacy implementation and its data source remain to be verified |
 | Top single-variant associations (filters, table) | Region, gene pages | Build | Not started |
 | Genetic support for genes (PIGEAN tabs) | PIGEAN, Factorization, Gene pages | Build | Not started |
 | ↳ "View evidence" regional plot | Inside PIGEAN tables; D-20 scope unresolved | Defer — link to legacy | Agreed |
@@ -38,7 +38,7 @@ Reuse is measured across legacy `src/views/*` pages.
 | CFDE gene sets (`GeneSet2Phenotype`) | Phenotype only; data only on dev host | Defer — link to legacy | Agreed |
 | Genetic correlations | Phenotype only, simple table | Build | Not started |
 | Globally enriched annotations | Phenotype only, simple table | Build | Not started |
-| Predicted effector-gene lists | Gene page | Build, from imported content | Not started |
+| Predicted effector-gene lists | Gene page | Build, from imported content | In progress: exact trait matching and a CMD display component exist, but the component is not connected to the page |
 | Gene-level associations | Hidden in legacy (`v-if="false"`) | Out of scope | — |
 
 Simple single-page tables are built rather than deferred: they don't count as significant rewrites.
@@ -85,6 +85,7 @@ Each successful pre-go-live import overwrites the previous catalog. A failed imp
 - **CFDE production source**: production BioIndex returns no CAD rows for `pigean-gene-set-phenotype`; only the dev host has data. Deferred, so the dev feed isn't needed for the preview.
 - **Effector-gene publication state (D-07a)**: the CMS JSON:API reports `status: true` and public mode for `egl_241`. The import checks publication on every run and fails closed if the record is missing, unpublished, or inaccessible; the data endpoint alone does not expose publication state.
 - **Effector-gene trait matching**: legacy uses substring matching, so one phenotype ID can match another's lists; 6 rows list several trait IDs. The import splits IDs for exact matching by the future page.
+- **Effector-gene page integration**: the display component and exact-match helper have been added and typechecked, but the change to connect the component to the phenotype page was not authorized. An isolated render with mocked Nuxt Content covered its states and links; real browser integration has not been tested.
 - **Effector-gene import lifecycle**: the cutover procedure must set `legacyContentImportEnabled` to `false` before CMS authority ends.
 - **Legacy deep links**: resolved without nginx. `public/phenotype.html` is a static `noindex` stub that runs `location.replace('/phenotype' + search + hash)` and has a no-script link.
 - **Browser access to BioIndex**: the page calls `bioindex.hugeamp.org` cross-origin. It worked from `localhost` in the VS Code integrated browser on 2026-11-10: phenotypes, datasets, and plots loaded. Scripted clients receive a Cloudflare managed challenge, and that browser may already hold Cloudflare clearance, so preview-host behavior is unverified. The fallback is a build-time switch to `bioindex-ext.hugeamp.org`, which sends `Access-Control-Allow-Origin: *`. Missing plots return JSON 404s that the browser blocks as cross-origin reads (ORB); the image error handler still shows the "not available" message.
@@ -98,6 +99,7 @@ Each successful pre-go-live import overwrites the previous catalog. A failed imp
 
 ## Log
 
+- 2026-11-11 — Added and unit-tested exact trait-ID matching for the imported effector catalog, and added a typechecked CMD display component. An isolated render with mocked Nuxt Content checked matching, escaped text, links, loading, empty, error, and missing-catalog states. Workspace validation, shared tests, CMD typecheck, static build, and six CMD smoke tests pass. Connecting the component to the phenotype page was not authorized, so this section remains incomplete and has not been browser-tested. The legacy provenance implementation and live BioIndex index discovery were also unavailable for verification.
 - 2026-11-10 — Added the first phenotype slice: the `/phenotype` route with a searchable, virtualized phenotype selector, an ancestry selector, title, and Manhattan/QQ plots, plus the legacy `.html` redirect stub. Logic lives in the new `@dig-portal/feature-phenotype` package (4 tests), and the plot URL builder in `api-clients`. Verified CMD typecheck, the static build, and 6 smoke tests. In a browser against live BioIndex, checked CAD, T2D selection (the URL updates and the ancestry is kept), the EU and GME ancestries (GME has no plots), the unknown-phenotype state, and the legacy redirect.
 - 2026-11-10 — Added application-level affected selection using pnpm's graph and one last-successful commit per portal. Focused Git-backed tests cover shared dependents, per-portal baselines, Markdown content, documentation-only and global changes, initial builds, invalid manifests, dirty worktrees, and divergent history. Variant and package-level selection remain.
 - 2026-11-10 — Deferred Studio OAuth setup and the production publish test at the architect's request; continue independent foundation work.
