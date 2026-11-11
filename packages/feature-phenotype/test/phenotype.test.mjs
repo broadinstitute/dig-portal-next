@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ancestryOptions, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '../src/index.ts'
+import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '../src/index.ts'
 
 test('reads legacy phenotype and ancestry query parameters', () => {
   assert.deepEqual(readPhenotypeRouteState({ phenotype: ' CAD ', ancestry: 'EU' }), { phenotype: 'CAD', ancestry: 'EU' })
@@ -27,6 +27,26 @@ test('finds phenotypes by exact name', () => {
   assert.equal(findPhenotype(phenotypes, 'CAD'), phenotypes[0])
   assert.equal(findPhenotype(phenotypes, 'cad'), null)
   assert.equal(findPhenotype(phenotypes, null), null)
+})
+
+test('filters and sorts datasets for a phenotype and optional ancestry', () => {
+  const dataset = (name, phenotypes, ancestry, subjects) => ({ name, phenotypes, ancestry, subjects })
+  const datasets = [
+    dataset('CAD EU small', ['CAD'], 'EU', 100),
+    dataset('T2D EU', ['T2D'], 'EU', 500),
+    dataset('CAD EA', ['CAD'], 'EA', 300),
+    dataset('CAD EU large', ['CAD'], 'EU', 400),
+  ]
+  assert.deepEqual(datasetsForPhenotype(datasets, 'CAD').map(({ name }) => name), [
+    'CAD EU large',
+    'CAD EA',
+    'CAD EU small',
+  ])
+  assert.deepEqual(datasetsForPhenotype(datasets, 'CAD', 'EU').map(({ name }) => name), [
+    'CAD EU large',
+    'CAD EU small',
+  ])
+  assert.deepEqual(datasetsForPhenotype(datasets, null), [])
 })
 
 test('matches effector lists by exact trait ID, including multi-trait entries', () => {

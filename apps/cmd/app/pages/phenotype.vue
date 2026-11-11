@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ancestryLabel } from '@dig-portal/domain'
-import { ancestryOptions, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '@dig-portal/feature-phenotype'
+import { ancestryOptions, datasetsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '@dig-portal/feature-phenotype'
 import portal from '../../portal.config'
 
 const ALL_ANCESTRIES = '__all__'
@@ -16,7 +16,7 @@ const { data: phenotypes, status: phenotypesStatus, error: phenotypesError } = u
   (_nuxtApp, { signal }) => bioIndex.phenotypes(portal.registryGroup, { signal }),
   { server: false, default: () => [] },
 )
-const { data: datasets, status: datasetsStatus } = useLazyAsyncData(
+const { data: datasets, status: datasetsStatus, error: datasetsError } = useLazyAsyncData(
   `datasets:${portal.registryGroup}`,
   (_nuxtApp, { signal }) => bioIndex.datasets(portal.registryGroup, { signal }),
   { server: false, default: () => [] },
@@ -28,6 +28,8 @@ const phenotypeItems = computed(() => phenotypes.value
   .sort((a, b) => a.label.localeCompare(b.label)))
 const ancestries = computed(() => ancestryOptions(datasets.value))
 const ancestryItems = computed(() => [{ value: ALL_ANCESTRIES, label: 'All ancestries' }, ...ancestries.value])
+const associatedDatasets = computed(() =>
+  datasetsForPhenotype(datasets.value, phenotype.value?.name ?? null, state.value.ancestry))
 const unknownAncestry = computed(() => datasetsStatus.value === 'success'
   && state.value.ancestry !== ''
   && !ancestries.value.some(({ value }) => value === state.value.ancestry))
@@ -150,6 +152,50 @@ useHead(() => ({
             >
           </UCard>
         </section>
+        <section class="mt-10 space-y-4" aria-labelledby="associated-datasets-heading">
+          <div class="space-y-1">
+            <h2 id="associated-datasets-heading" class="text-xl font-semibold">Datasets with associations</h2>
+            <p class="text-sm text-muted">
+              Datasets reporting results for {{ phenotype.description }}<template v-if="state.ancestry">
+                ({{ ancestryLabel(state.ancestry) }})
+              </template>.
+            </p>
+          </div>
+          <UAlert
+            v-if="datasetsError"
+            color="error"
+            title="Datasets could not be loaded"
+            description="BioIndex did not respond. Try again later."
+          />
+          <p v-else-if="datasetsStatus === 'pending'" class="text-muted">Loading datasets…</p>
+          <p v-else-if="associatedDatasets.length === 0" class="text-muted">
+            No datasets are available for this phenotype and ancestry.
+          </p>
+          <div v-else class="overflow-x-auto rounded-lg border border-default">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-elevated text-muted">
+                <tr>
+                  <th scope="col" class="px-4 py-3 font-medium">Dataset</th>
+                  <th scope="col" class="px-4 py-3 font-medium">Ancestry</th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium">Subjects</th>
+                  <th scope="col" class="px-4 py-3 font-medium">Technology</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default">
+                <tr v-for="dataset in associatedDatasets" :key="`${dataset.name}:${dataset.ancestry}`">
+                  <td class="px-4 py-3">
+                    <span class="font-medium">{{ dataset.name }}</span>
+                    <p class="mt-1 text-muted">{{ dataset.description }}</p>
+                  </td>
+                  <td class="px-4 py-3">{{ ancestryLabel(dataset.ancestry) }}</td>
+                  <td class="px-4 py-3 text-right tabular-nums">{{ dataset.subjects.toLocaleString() }}</td>
+                  <td class="px-4 py-3">{{ dataset.technology }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <EffectorGeneLists :phenotype="phenotype.name" />
       </template>
     </ClientOnly>
   </div>

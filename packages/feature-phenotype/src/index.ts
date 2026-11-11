@@ -45,6 +45,19 @@ export function findPhenotype(phenotypes: readonly Phenotype[], name: string | n
   return phenotypes.find((phenotype) => phenotype.name === name) ?? null
 }
 
+export function datasetsForPhenotype(
+  datasets: readonly PortalDataset[],
+  phenotype: string | null,
+  ancestry = '',
+): PortalDataset[] {
+  if (!phenotype) return []
+  return datasets
+    .filter(({ phenotypes, ancestry: datasetAncestry }) =>
+      phenotypes.includes(phenotype) && (!ancestry || datasetAncestry === ancestry))
+    .slice()
+    .sort((a, b) => b.subjects - a.subjects || a.name.localeCompare(b.name))
+}
+
 export function effectorListsForPhenotype<T extends { readonly traitIds: readonly string[] }>(
   entries: readonly T[],
   phenotype: string | null,
