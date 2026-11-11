@@ -1,0 +1,101 @@
+{
+  "ancestry_id": "Mixed",
+  "ancestry_name": "Mixed",
+  "description": null,
+  "id": "dig-open-bottom-line-analysis-stg_bottom-line_Mixed_CAD.sumstats.tsv.gz",
+  "name": "Published open-data bottom-line result for CAD / Mixed",
+  "pipeline_type": "bottom-line",
+  "provenance": {
+    "activities": [
+      {
+        "activity_type": "LoadAncestrySpecificStage",
+        "description": "Bottom-line ancestry-specific load for CAD / AA",
+        "id": "dapper:Activity.LuM79_yNElKijEl80-GVQBJYSUzudXat",
+        "name": "Bottom-line ancestry-specific load for CAD / AA",
+        "repo_url": "https://github.com/broadinstitute/dig-aggregator-methods/blob/master/bottom-line/src/main/scala/LoadAncestrySpecificStage.scala"
+      },
+      {
+        "activity_type": "VariantScalingStage",
+        "description": "Intake scaling for GWAS / Verma2024_MVPTraits_AA / CAD",
+        "id": "dapper:Activity.IXpKyBET40kZesXul7BRb2sgN2AagR_D",
+        "name": "Intake scaling for GWAS / Verma2024_MVPTraits_AA / CAD",
+        "repo_url": "https://github.com/broadinstitute/dig-aggregator-methods/blob/master/intake/src/main/scala/VariantScalingStage.scala"
+      }
+    ],
+    "c2m2_files": [
+      {
+        "description": "Bottom-line ancestry-specific staging for CAD / AA",
+        "filename": "ancestry=AA",
+        "id": "dapper:C2M2File.tLf1XHtm1EgcvK32bWMRamOPc-YvuRTt",
+        "local_id": "s3://dig-analysis-data/out/metaanalysis/bottom-line/staging/ancestry-specific/CAD/ancestry=AA/",
+        "name": "Bottom-line ancestry-specific staging for CAD / AA"
+      },
+      {
+        "description": "Partitioned variants for Verma2024_MVPTraits_AA / CAD / AA / rare=true",
+        "filename": "rare=true",
+        "id": "dapper:C2M2File.3-RUBQhK1J09vcZB549VheQmQKxcz3ms",
+        "local_id": "s3://dig-analysis-data/out/metaanalysis/variants/CAD/dataset=Verma2024_MVPTraits_AA/ancestry=AA/rare=true/",
+        "name": "Partitioned variants for Verma2024_MVPTraits_AA / CAD / AA / rare=true"
+      },
+      {
+        "description": "Bottom-line variants input for GWAS / Verma2024_MVPTraits_AA / CAD",
+        "filename": "CAD",
+        "id": "dapper:C2M2File.scvJ96RFSXu0GfMRnn6k-0bAfrSCMVHC",
+        "local_id": "s3://dig-analysis-data/variants/GWAS/Verma2024_MVPTraits_AA/CAD/",
+        "name": "Bottom-line variants input for GWAS / Verma2024_MVPTraits_AA / CAD"
+      },
+      {
+        "description": "QC variants for GWAS / Verma2024_MVPTraits_AA / CAD",
+        "filename": "CAD",
+        "id": "dapper:C2M2File.RPGHWtzWjusF91CEhRc6Sqrde1iAsG42",
+        "local_id": "s3://dig-analysis-data/variants_qc/GWAS/Verma2024_MVPTraits_AA/CAD/",
+        "name": "QC variants for GWAS / Verma2024_MVPTraits_AA / CAD"
+      }
+    ],
+    "datasets": [
+      {
+        "access_level": "controlled",
+        "description": "Bottom-line ancestry-specific result for CAD / AA",
+        "id": "dapper:Dataset.fQ-i4-bNo8JGGMEgO7HNFTA3o9YnFROR",
+        "name": "Bottom-line ancestry-specific result for CAD / AA",
+        "resource_type": "dataset"
+      }
+    ],
+    "drs_objects": [],
+    "has_drs_object_edges": [],
+    "used_edges": [
+      {
+        "edge_role": "data_input",
+        "object": "dapper:C2M2File.tLf1XHtm1EgcvK32bWMRamOPc-YvuRTt",
+        "predicate": "prov:used",
+        "subject": "dapper:Activity.LuM79_yNElKijEl80-GVQBJYSUzudXat"
+      },
+      {
+        "edge_role": "data_input",
+        "object": "dapper:C2M2File.3-RUBQhK1J09vcZB549VheQmQKxcz3ms",
+        "predicate": "prov:used",
+        "subject": "dapper:Activity.LuM79_yNElKijEl80-GVQBJYSUzudXat"
+      },
+      {
+        "edge_role": "data_input",
+        "object": "dapper:C2M2File.RPGHWtzWjusF91CEhRc6Sqrde1iAsG42",
+        "predicate": "prov:used",
+        "subject": "dapper:Activity.IXpKyBET40kZesXul7BRb2sgN2AagR_D"
+      }
+    ],
+    "was_generated_by_edges": [
+      {
+        "object": "dapper:Activity.IXpKyBET40kZesXul7BRb2sgN2AagR_D",
+        "predicate": "prov:wasGeneratedBy",
+        "subject": "dapper:C2M2File.scvJ96RFSXu0GfMRnn6k-0bAfrSCMVHC"
+      },
+      {
+        "object": "dapper:Activity.LuM79_yNElKijEl80-GVQBJYSUzudXat",
+        "predicate": "prov:wasGeneratedBy",
+        "subject": "dapper:Dataset.fQ-i4-bNo8JGGMEgO7HNFTA3o9YnFROR"
+      }
+    ]
+  },
+  "trait_legacy_id": "CAD",
+  "trait_name": "Coronary artery disease (CAD)"
+}

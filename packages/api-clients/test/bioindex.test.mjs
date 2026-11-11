@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient } from '../src/index.ts'
+import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient } from '../src/index.ts'
 
 function fixture(name) {
   return JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'))
@@ -24,6 +24,43 @@ function decodeAssociation(value) {
   }
   return { variantId: value.varId, phenotype: value.phenotype }
 }
+
+test('loads recorded bottom-line traits and provenance with cancellation', async () => {
+  const recorded = fixture('cad-provenance')
+  const mock = mockFetch(fixture('bottom-line-traits'), recorded)
+  const client = createProvenanceClient({ baseUrl: 'https://example.test/artifact_provenance/', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const traits = await client.traits({ signal })
+  assert.deepEqual(traits.map(({ legacyId }) => legacyId), ['CAD', 'T2D'])
+  const artifact = traits[0].ancestries.find(({ ancestryId }) => ancestryId === 'Mixed')
+  const detail = await client.provenance(artifact.id, { signal })
+  assert.equal(detail.traitId, 'CAD')
+  assert.equal(detail.ancestryId, 'Mixed')
+  assert.equal(detail.graph.activities.length, 2)
+  assert.equal(detail.graph.resources.length, 5)
+  assert.deepEqual(detail.raw, recorded.provenance)
+  assert.equal(mock.calls[0].url, 'https://example.test/artifact_provenance/ws/bottom_line/trait_list_full')
+  assert.equal(mock.calls[1].url, client.provenanceUrl(artifact.id))
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  assert.equal(client.summaryStatisticsUrl('CAD', 'Mixed'), 'https://dig-open-bottom-line-analysis.s3.amazonaws.com/bottom-line/Mixed/CAD.sumstats.tsv.gz')
+  assert.ok(client.provenanceUrl('a?b&c').endsWith('?id=a%3Fb%26c'))
+})
+
+test('rejects malformed, mismatched and failed provenance responses', async () => {
+  const missingArray = fixture('cad-provenance')
+  delete missingArray.provenance.used_edges
+  const duplicate = fixture('cad-provenance')
+  duplicate.provenance.activities.push(duplicate.provenance.activities[0])
+  const mock = mockFetch({}, missingArray, duplicate, fixture('cad-provenance'), new Response('unavailable', { status: 503 }), new Response('<html>unavailable</html>'))
+  const client = createProvenanceClient({ baseUrl: '/provenance', fetch: mock.fetch })
+  await assert.rejects(client.traits(), /array/)
+  await assert.rejects(client.provenance(missingArray.id), /array/)
+  await assert.rejects(client.provenance(duplicate.id), /Duplicate/)
+  await assert.rejects(client.provenance('wrong-artifact'), /does not match/)
+  await assert.rejects(client.traits(), { status: 503 })
+  await assert.rejects(client.traits(), /not valid JSON/)
+  await assert.rejects(client.provenance(''), /artifact ID/)
+})
 
 test('loads phenotype metadata and forwards cancellation', async () => {
   const mock = mockFetch(fixture('phenotypes'))

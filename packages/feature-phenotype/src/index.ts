@@ -1,4 +1,4 @@
-import { ancestryLabel, type Phenotype, type PortalDataset } from '@dig-portal/domain'
+import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait } from '@dig-portal/domain'
 
 export interface PhenotypeRouteState {
   readonly phenotype: string | null
@@ -63,4 +63,75 @@ export function effectorListsForPhenotype<T extends { readonly traitIds: readonl
   phenotype: string | null,
 ): T[] {
   return phenotype ? entries.filter(({ traitIds }) => traitIds.includes(phenotype)) : []
+}
+
+/** Never substitute another ancestry's evidence when the requested result is absent. */
+export function selectProvenanceAncestry(traits: readonly ProvenanceTrait[], phenotype: string, ancestry = '') {
+  return traits.find(({ legacyId }) => legacyId === phenotype)?.ancestries
+    .find(({ ancestryId }) => ancestryId === (ancestry || 'Mixed')) ?? null
+}
+
+export function provenanceHttpUrl(value: string | null): string | null {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null
+  } catch {
+    return null
+  }
+}
+
+export interface ProvenanceStage {
+  readonly activity: ProvenanceNode
+  /** Parallel stages share a sequence; null means dependencies contain a cycle. */
+  readonly sequence: number | null
+  readonly inputs: readonly ProvenanceNode[]
+  readonly outputs: readonly ProvenanceNode[]
+}
+
+export function provenanceStages(graph: ProvenanceGraph): ProvenanceStage[] {
+  const resources = new Map(graph.resources.map((node) => [node.id, node]))
+  for (const edge of graph.linked) {
+    const dataset = resources.get(edge.subject)
+    const location = resources.get(edge.object)?.location
+    if (dataset && location) resources.set(dataset.id, { ...dataset, location })
+  }
+  const resource = (id: string): ProvenanceNode => resources.get(id) ?? { id, name: id, type: 'Unresolved resource', location: null }
+  const producers = new Map<string, Set<string>>()
+  for (const edge of graph.generated) {
+    const ids = producers.get(edge.subject) ?? new Set<string>()
+    ids.add(edge.object)
+    producers.set(edge.subject, ids)
+  }
+  const dependencies = new Map(graph.activities.map(({ id }) => [id, new Set<string>()]))
+  for (const edge of graph.used) {
+    for (const producer of producers.get(edge.object) ?? []) {
+      if (producer !== edge.subject) dependencies.get(edge.subject)?.add(producer)
+    }
+  }
+  const remaining = new Map(graph.activities.map((activity) => [activity.id, activity]))
+  const rows: ProvenanceStage[] = []
+  function add(activity: ProvenanceNode, sequence: number | null) {
+    rows.push({
+      activity, sequence,
+      inputs: graph.used.filter(({ subject }) => subject === activity.id).map(({ object }) => resource(object)),
+      outputs: graph.generated.filter(({ object }) => object === activity.id).map(({ subject }) => resource(subject)),
+    })
+  }
+  let sequence = 1
+  while (remaining.size) {
+    const ready = [...remaining.values()]
+      .filter(({ id }) => [...dependencies.get(id)!].every((id) => !remaining.has(id)))
+      .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+    if (!ready.length) {
+      for (const activity of remaining.values()) add(activity, null)
+      break
+    }
+    for (const activity of ready) {
+      add(activity, sequence)
+      remaining.delete(activity.id)
+    }
+    sequence += 1
+  }
+  return rows
 }

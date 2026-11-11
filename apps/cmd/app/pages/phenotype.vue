@@ -57,6 +57,8 @@ const plots = computed(() => {
   ].map(({ kind, title }) => ({ title, url: bioIndex.phenotypePlotUrl(phenotype.value!.name, kind, ancestry) }))
 })
 const failedPlots = ref(new Set<string>())
+const provenanceOpen = ref(false)
+watch(() => [state.value.phenotype, state.value.ancestry], () => { provenanceOpen.value = false })
 
 useHead(() => ({
   title: phenotype.value ? `${phenotype.value.description} | ${portal.title}` : `Phenotype | ${portal.title}`,
@@ -152,6 +154,12 @@ useHead(() => ({
             >
           </UCard>
         </section>
+        <UModal v-model:open="provenanceOpen" title="Bottom-line provenance" description="Processing history and summary statistics for the selected phenotype and ancestry." :ui="{ content: 'max-w-6xl' }">
+          <UButton color="neutral" variant="outline">Provenance &amp; summary statistics</UButton>
+          <template #body>
+            <BottomLineProvenance v-if="provenanceOpen" :phenotype="phenotype.name" :ancestry="state.ancestry" />
+          </template>
+        </UModal>
         <section class="mt-10 space-y-4" aria-labelledby="associated-datasets-heading">
           <div class="space-y-1">
             <h2 id="associated-datasets-heading" class="text-xl font-semibold">Datasets with associations</h2>

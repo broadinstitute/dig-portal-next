@@ -13,6 +13,11 @@ export default defineNuxtConfig({
     css: ["~/assets/css/main.css"],
     ui: { fonts: false },
     app: { head: { title: portal.title } },
-    // Build-time public setting (D-23); override with NUXT_PUBLIC_BIOINDEX_URL.
-    runtimeConfig: { public: { bioindexUrl: "https://bioindex.hugeamp.org" } },
+    // D-23: build-time public settings; NUXT_PUBLIC_BIOINDEX_URL / NUXT_PUBLIC_PROVENANCE_URL.
+    runtimeConfig: {
+        public: {
+            bioindexUrl: "https://bioindex.hugeamp.org",
+            provenanceUrl: "https://translator.broadinstitute.org/artifact_provenance",
+        },
+    },
 });

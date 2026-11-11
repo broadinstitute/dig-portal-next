@@ -40,3 +40,46 @@ export interface PortalDataset {
   readonly subjects: number
   readonly community: string | null
 }
+
+export interface ProvenanceAncestry {
+  readonly id: string
+  readonly ancestryId: string
+  readonly ancestryName: string
+}
+
+export interface ProvenanceTrait {
+  readonly legacyId: string
+  readonly name: string
+  readonly ancestries: readonly ProvenanceAncestry[]
+}
+
+export interface ProvenanceNode {
+  readonly id: string
+  readonly name: string
+  readonly type: string
+  readonly location: string | null
+}
+
+export interface ProvenanceEdge {
+  readonly subject: string
+  readonly object: string
+}
+
+export interface ProvenanceGraph {
+  readonly activities: readonly ProvenanceNode[]
+  readonly resources: readonly ProvenanceNode[]
+  readonly used: readonly ProvenanceEdge[]
+  readonly generated: readonly ProvenanceEdge[]
+  readonly linked: readonly ProvenanceEdge[]
+}
+
+export interface BottomLineProvenance {
+  readonly id: string
+  readonly traitId: string
+  readonly ancestryId: string
+  readonly pipelineType: string
+  readonly description: string | null
+  readonly graph: ProvenanceGraph
+  /** Original graph for JSON inspection and export. */
+  readonly raw: Readonly<Record<string, unknown>>
+}

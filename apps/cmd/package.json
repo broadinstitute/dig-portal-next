@@ -1,33 +1,34 @@
 {
-  "name": "@dig-portal/cmd",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "nuxt generate",
-    "validate-content": "node ./tools/validate-content.mjs",
-    "dev": "nuxt dev",
-    "postinstall": "nuxt prepare",
-    "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/layer-shadowing.test.mjs",
-    "typecheck": "nuxt typecheck"
-  },
-  "dependencies": {
-    "@dig-portal/api-clients": "workspace:*",
-    "@dig-portal/content": "workspace:*",
-    "@dig-portal/domain": "workspace:*",
-    "@dig-portal/feature-phenotype": "workspace:*",
-    "@dig-portal/platform": "workspace:*",
-    "@nuxt/content": "3.15.0",
-    "@nuxt/ui": "4.12.0",
-    "better-sqlite3": "12.11.1",
-    "nuxt": "4.5.2",
-    "tailwindcss": "4.3.5",
-    "vue": "3.5.45",
-    "vue-router": "5.5.0"
-  },
-  "devDependencies": {
-    "@types/node": "24.19.2",
-    "typescript": "5.9.3",
-    "vue-tsc": "3.3.14"
-  }
+    "name": "@dig-portal/cmd",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "nuxt generate",
+        "validate-content": "node ./tools/validate-content.mjs",
+        "dev": "nuxt dev",
+        "postinstall": "nuxt prepare",
+        "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/layer-shadowing.test.mjs",
+        "typecheck": "nuxt typecheck"
+    },
+    "dependencies": {
+        "@dig-portal/api-clients": "workspace:*",
+        "@dig-portal/content": "workspace:*",
+        "@dig-portal/domain": "workspace:*",
+        "@dig-portal/feature-phenotype": "workspace:*",
+        "@dig-portal/platform": "workspace:*",
+        "@nuxt/content": "3.15.0",
+        "@nuxt/ui": "4.12.0",
+        "better-sqlite3": "12.11.1",
+        "nuxt": "4.5.2",
+        "tailwindcss": "4.3.5",
+        "vis-network": "10.1.5",
+        "vue": "3.5.45",
+        "vue-router": "5.5.0"
+    },
+    "devDependencies": {
+        "@types/node": "24.19.2",
+        "typescript": "5.9.3",
+        "vue-tsc": "3.3.14"
+    }
 }

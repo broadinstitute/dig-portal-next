@@ -17,3 +17,31 @@ BioIndex's `limit` is a total result cap, not a page size: a null continuation c
 The cap check matters even when all bytes are reported as read: BioIndex can consume one extra record without returning it. For example, the CAD global-associations query currently has 598 records, but `limit=597` reports 597 records and all bytes read. Progress on continuation responses is relative to that resumed reader, not the original query.
 
 The test fixtures are reduced samples of public BioIndex responses; pagination tokens and error responses are simulated.
+
+## Bottom-line provenance
+
+`createProvenanceClient` reads the public Translator artifact-provenance service
+used by the legacy bottom-line component. This service returns plain JSON, not
+BioIndex envelopes. `traits()` decodes the trait/ancestry catalog;
+`provenance(artifactId)` validates the artifact metadata and graph and rejects a
+response for a different artifact. Both methods accept an abort signal and reject
+malformed responses and HTTP failures. Original graph JSON is retained for inspection.
+
+```ts
+import { createProvenanceClient } from '@dig-portal/api-clients'
+
+const client = createProvenanceClient({
+  baseUrl: 'https://translator.broadinstitute.org/artifact_provenance',
+})
+const traits = await client.traits()
+```
+
+The caller selects the exact trait ID and ancestry; an absent ancestry must not
+silently display another ancestry's evidence. On the phenotype page, the combined
+result selects `Mixed`. `summaryStatisticsUrl(traitId, ancestryId)` follows the
+legacy public download path, independently of the provenance service's artifact
+IDs. Fixture sources and reductions are recorded in
+[`provenance-sources.md`](./test/fixtures/provenance-sources.md).
+
+CMD supplies this service URL through public build-time config; use
+`NUXT_PUBLIC_PROVENANCE_URL` when rebuilding for another environment (D-23).

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '../src/index.ts'
+import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages } from '../src/index.ts'
 
 test('reads legacy phenotype and ancestry query parameters', () => {
   assert.deepEqual(readPhenotypeRouteState({ phenotype: ' CAD ', ancestry: 'EU' }), { phenotype: 'CAD', ancestry: 'EU' })
@@ -59,4 +59,42 @@ test('matches effector lists by exact trait ID, including multi-trait entries', 
   assert.deepEqual(effectorListsForPhenotype(entries, 'T2D'), [entries[2]])
   assert.deepEqual(effectorListsForPhenotype(entries, 'cad'), [])
   assert.deepEqual(effectorListsForPhenotype(entries, null), [])
+})
+
+test('selects exact provenance without substituting a different trait or ancestry', () => {
+  const mixed = { id: 'mixed', ancestryId: 'Mixed' }
+  const european = { id: 'eu', ancestryId: 'EU' }
+  const traits = [{ legacyId: 'CAD', ancestries: [european, mixed] }, { legacyId: 'CADinT2D', ancestries: [mixed] }]
+  assert.equal(selectProvenanceAncestry(traits, 'CAD'), mixed)
+  assert.equal(selectProvenanceAncestry(traits, 'CAD', 'EU'), european)
+  assert.equal(selectProvenanceAncestry(traits, 'CAD', 'GME'), null)
+  assert.equal(selectProvenanceAncestry(traits, 'cad'), null)
+  assert.equal(selectProvenanceAncestry([{ legacyId: 'T2D', ancestries: [european] }], 'T2D'), null)
+})
+
+test('orders provenance dependencies, preserves parallel stages and resolves resource locations', () => {
+  const node = (id) => ({ id, name: id, type: 'Activity', location: null })
+  const graph = {
+    activities: ['final', 'sourceB', 'sourceA'].map(node),
+    resources: [node('inputA'), node('inputB'), node('dataset'), { ...node('drs'), location: 'drs://result' }],
+    used: [{ subject: 'final', object: 'inputA' }, { subject: 'final', object: 'inputB' }],
+    generated: [{ subject: 'inputA', object: 'sourceA' }, { subject: 'inputB', object: 'sourceB' }, { subject: 'dataset', object: 'final' }],
+    linked: [{ subject: 'dataset', object: 'drs' }],
+  }
+  const stages = provenanceStages(graph)
+  assert.deepEqual(stages.map(({ activity, sequence }) => [activity.id, sequence]), [['sourceA', 1], ['sourceB', 1], ['final', 2]])
+  assert.deepEqual(stages[2].inputs.map(({ id }) => id), ['inputA', 'inputB'])
+  assert.equal(stages[2].outputs[0].location, 'drs://result')
+  assert.equal(graph.resources[2].location, null, 'does not mutate source records')
+  graph.used.push({ subject: 'sourceA', object: 'dataset' }, { subject: 'sourceB', object: 'missing' })
+  const cyclic = provenanceStages(graph)
+  assert.equal(cyclic.find(({ activity }) => activity.id === 'final').sequence, null)
+  assert.equal(cyclic.find(({ activity }) => activity.id === 'sourceB').inputs[0].type, 'Unresolved resource')
+})
+
+test('makes only credential-free HTTP resource locations clickable', () => {
+  assert.equal(provenanceHttpUrl('https://example.org/path'), 'https://example.org/path')
+  for (const location of ['javascript:alert(1)', 'data:text/html,test', 's3://bucket/key', 'drs://id', 'https://user:password@example.org', '/relative', null]) {
+    assert.equal(provenanceHttpUrl(location), null)
+  }
 })

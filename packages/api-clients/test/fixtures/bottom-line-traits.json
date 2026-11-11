@@ -1,0 +1,122 @@
+[
+  {
+    "ancestries": [
+      {
+        "ancestry_id": "AA",
+        "ancestry_name": "African American",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_AA_CAD.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for CAD / AA",
+        "trait_legacy_id": "CAD",
+        "trait_name": "Coronary artery disease (CAD)"
+      },
+      {
+        "ancestry_id": "EA",
+        "ancestry_name": "East Asian",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_EA_CAD.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for CAD / EA",
+        "trait_legacy_id": "CAD",
+        "trait_name": "Coronary artery disease (CAD)"
+      },
+      {
+        "ancestry_id": "EU",
+        "ancestry_name": "European",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_EU_CAD.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for CAD / EU",
+        "trait_legacy_id": "CAD",
+        "trait_name": "Coronary artery disease (CAD)"
+      },
+      {
+        "ancestry_id": "HS",
+        "ancestry_name": "Hispanic",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_HS_CAD.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for CAD / HS",
+        "trait_legacy_id": "CAD",
+        "trait_name": "Coronary artery disease (CAD)"
+      },
+      {
+        "ancestry_id": "Mixed",
+        "ancestry_name": "Mixed",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_Mixed_CAD.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for CAD / Mixed",
+        "trait_legacy_id": "CAD",
+        "trait_name": "Coronary artery disease (CAD)"
+      },
+      {
+        "ancestry_id": "SA",
+        "ancestry_name": "South Asian",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_SA_CAD.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for CAD / SA",
+        "trait_legacy_id": "CAD",
+        "trait_name": "Coronary artery disease (CAD)"
+      }
+    ],
+    "description": "Coronary artery disease (CAD)",
+    "kpn_id": "KPN.TRAIT:0000136",
+    "legacy_id": "CAD",
+    "name": "Coronary artery disease (CAD)"
+  },
+  {
+    "ancestries": [
+      {
+        "ancestry_id": "AA",
+        "ancestry_name": "African American",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_AA_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / AA",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      },
+      {
+        "ancestry_id": "EA",
+        "ancestry_name": "East Asian",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_EA_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / EA",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      },
+      {
+        "ancestry_id": "EU",
+        "ancestry_name": "European",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_EU_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / EU",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      },
+      {
+        "ancestry_id": "HS",
+        "ancestry_name": "Hispanic",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_HS_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / HS",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      },
+      {
+        "ancestry_id": "Mixed",
+        "ancestry_name": "Mixed",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_Mixed_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / Mixed",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      },
+      {
+        "ancestry_id": "SSAF",
+        "ancestry_name": "SSAF",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_SSAF_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / SSAF",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      },
+      {
+        "ancestry_id": "SA",
+        "ancestry_name": "South Asian",
+        "id": "dig-open-bottom-line-analysis-stg_bottom-line_SA_T2D.sumstats.tsv.gz",
+        "name": "Published open-data bottom-line result for T2D / SA",
+        "trait_legacy_id": "T2D",
+        "trait_name": "Type 2 diabetes (T2D)"
+      }
+    ],
+    "description": "Type 2 diabetes (T2D)",
+    "kpn_id": "KPN.TRAIT:0000398",
+    "legacy_id": "T2D",
+    "name": "Type 2 diabetes (T2D)"
+  }
+]

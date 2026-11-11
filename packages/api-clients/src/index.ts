@@ -1,4 +1,4 @@
-import type { Phenotype, PortalDataset } from '@dig-portal/domain'
+import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -313,6 +313,122 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
 
     async continueMatches(token: string, requestOptions: BioIndexRequestOptions = {}): Promise<BioIndexPage<string>> {
       return continuePage(token, decodeString, requestOptions)
+    },
+  }
+}
+
+function requiredString(value: unknown, field: string): string {
+  if (typeof value !== 'string' || value.length === 0) throw new BioIndexResponseError(`Invalid provenance ${field}.`)
+  return value
+}
+
+function nullableString(value: unknown, field: string): string | null {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'string') throw new BioIndexResponseError(`Invalid provenance ${field}.`)
+  return value
+}
+
+function record(value: unknown): Record<string, unknown> {
+  if (!isRecord(value)) throw new BioIndexResponseError('Invalid provenance record.')
+  return value
+}
+
+function array<T>(value: unknown, decode: (entry: unknown) => T): T[] {
+  if (!Array.isArray(value)) throw new BioIndexResponseError('Invalid provenance array.')
+  return value.map(decode)
+}
+
+function decodeProvenanceTrait(value: unknown): ProvenanceTrait {
+  const trait = record(value)
+  return {
+    legacyId: requiredString(trait.legacy_id, 'trait ID'),
+    name: requiredString(trait.name ?? trait.description ?? trait.legacy_id, 'trait name'),
+    ancestries: array(trait.ancestries, (value) => {
+      const ancestry = record(value)
+      return {
+        id: requiredString(ancestry.id, 'ancestry artifact ID'),
+        ancestryId: requiredString(ancestry.ancestry_id, 'ancestry ID'),
+        ancestryName: requiredString(ancestry.ancestry_name ?? ancestry.ancestry_id, 'ancestry name'),
+      }
+    }),
+  }
+}
+
+function decodeProvenance(value: unknown): BottomLineProvenance {
+  const detail = record(value)
+  const graph = record(detail.provenance)
+  function nodes(field: string, type: string): ProvenanceNode[] {
+    return array(graph[field], (value) => {
+      const node = record(value)
+      return {
+        id: requiredString(node.id, 'node ID'),
+        name: requiredString(node.name ?? node.description ?? node.filename ?? node.id, 'node name'),
+        type: nullableString(node.activity_type, 'activity type') ?? type,
+        location: nullableString(node.repo_url ?? node.self_uri ?? node.local_id ?? node.location ?? node.url, 'location'),
+      }
+    })
+  }
+  function edges(field: string): ProvenanceEdge[] {
+    return array(graph[field], (value) => {
+      const edge = record(value)
+      return { subject: requiredString(edge.subject, 'edge subject'), object: requiredString(edge.object, 'edge object') }
+    })
+  }
+  const activities = nodes('activities', 'Activity')
+  const resources = [...nodes('c2m2_files', 'C2M2 file'), ...nodes('datasets', 'Dataset'), ...nodes('drs_objects', 'DRS object')]
+  const ids = new Set<string>()
+  for (const { id } of [...activities, ...resources]) {
+    if (ids.has(id)) throw new BioIndexResponseError('Duplicate provenance node ID.')
+    ids.add(id)
+  }
+  return {
+    id: requiredString(detail.id, 'artifact ID'),
+    traitId: requiredString(detail.trait_legacy_id, 'trait ID'),
+    ancestryId: requiredString(detail.ancestry_id, 'ancestry ID'),
+    pipelineType: requiredString(detail.pipeline_type, 'pipeline type'),
+    description: nullableString(detail.description, 'description'),
+    graph: { activities, resources, used: edges('used_edges'), generated: edges('was_generated_by_edges'), linked: edges('has_drs_object_edges') },
+    raw: graph,
+  }
+}
+
+/** Translator artifact provenance uses plain JSON rather than BioIndex envelopes. */
+export function createProvenanceClient(options: BioIndexClientOptions) {
+  const baseUrl = normalizeBaseUrl(options.baseUrl)
+  const fetchRequest = options.fetch ?? globalThis.fetch
+  if (typeof fetchRequest !== 'function') throw new TypeError('A fetch implementation is required.')
+
+  async function request(path: string, requestOptions: BioIndexRequestOptions): Promise<unknown> {
+    const response = await fetchRequest(`${baseUrl}${path}`, { headers: { Accept: 'application/json' }, signal: requestOptions.signal })
+    if (!response.ok) throw new BioIndexHttpError(path, response.status)
+    try {
+      return await response.json()
+    } catch (cause) {
+      if (requestOptions.signal?.aborted) throw cause
+      throw new BioIndexResponseError('Provenance response is not valid JSON.', { cause })
+    }
+  }
+
+  function provenanceUrl(id: string): string {
+    requiredString(id, 'artifact ID')
+    return `${baseUrl}/get_provenance?${new URLSearchParams({ id })}`
+  }
+
+  return {
+    async traits(requestOptions: BioIndexRequestOptions = {}): Promise<readonly ProvenanceTrait[]> {
+      return array(await request('/ws/bottom_line/trait_list_full', requestOptions), decodeProvenanceTrait)
+    },
+    async provenance(id: string, requestOptions: BioIndexRequestOptions = {}): Promise<BottomLineProvenance> {
+      requiredString(id, 'artifact ID')
+      const result = decodeProvenance(await request(`/get_provenance?${new URLSearchParams({ id })}`, requestOptions))
+      if (result.id !== id) throw new BioIndexResponseError('Provenance artifact does not match the request.')
+      return result
+    },
+    provenanceUrl,
+    summaryStatisticsUrl(traitId: string, ancestryId: string): string {
+      requiredString(traitId, 'trait ID')
+      requiredString(ancestryId, 'ancestry ID')
+      return `https://dig-open-bottom-line-analysis.s3.amazonaws.com/bottom-line/${encodeURIComponent(ancestryId)}/${encodeURIComponent(traitId)}.sumstats.tsv.gz`
     },
   }
 }
