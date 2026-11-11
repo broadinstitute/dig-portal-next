@@ -39,6 +39,38 @@ test('loads phenotype metadata and forwards cancellation', async () => {
   assert.equal(mock.calls[0].options.signal, controller.signal)
 })
 
+test('loads dataset metadata including nullable labels', async () => {
+  const mock = mockFetch(fixture('datasets'))
+  const client = createBioIndexClient({ baseUrl: 'https://example.test', fetch: mock.fetch })
+
+  const datasets = await client.datasets('md')
+
+  assert.equal(mock.calls[0].url, 'https://example.test/api/portal/datasets?q=md')
+  assert.deepEqual(datasets[0], {
+    name: 'GWAS_CADT2D',
+    description: 'Joint T2D-CHD GWAS',
+    phenotypes: ['CAD', 'CADinNonT2D', 'CADinT2D', 'T2D'],
+    ancestry: 'Mixed',
+    ancestryName: 'Mixed',
+    technology: 'GWAS',
+    subjects: 265678,
+    community: null,
+  })
+  assert.equal(datasets[1].ancestryName, null)
+})
+
+test('rejects incomplete or malformed portal metadata', async () => {
+  const incomplete = fixture('phenotypes')
+  incomplete.count += 1
+  const invalid = fixture('datasets')
+  invalid.data[0].subjects = -1
+  const mock = mockFetch(incomplete, invalid)
+  const client = createBioIndexClient({ baseUrl: 'https://example.test', fetch: mock.fetch })
+
+  await assert.rejects(client.phenotypes('md'), /incomplete count/)
+  await assert.rejects(client.datasets('md'), /invalid record/)
+})
+
 test('decodes an association page without concealing limited results', async () => {
   const mock = mockFetch(fixture('cad-association'))
   const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
@@ -66,6 +98,63 @@ test('exposes and encodes continuation tokens for subsequent pages', async () =>
   assert.deepEqual(next.data, page.data)
 })
 
+test('collects continuation pages and reports complete results', async () => {
+  const first = fixture('cad-association')
+  first.continuation = 'next'
+  first.progress = { bytes_read: 500, bytes_total: 1000, filtered: 0 }
+  const last = fixture('cad-association')
+  last.data[0].varId = '9:22100000:A:G'
+  last.progress = { bytes_read: 500, bytes_total: 500, filtered: 0 }
+  const mock = mockFetch(first, last)
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const controller = new AbortController()
+
+  const result = await client.queryAll('global-associations', 'CAD', decodeAssociation, { limit: 3, signal: controller.signal })
+
+  assert.deepEqual(result.data.map(({ variantId }) => variantId), ['9:22098574:A:G', '9:22100000:A:G'])
+  assert.equal(result.completeness, 'complete')
+  assert.equal(result.restricted, 0)
+  assert.equal(mock.calls[1].url, '/bioindex/api/bio/cont?token=next')
+  assert.equal(mock.calls[1].options.signal, controller.signal)
+})
+
+test('reports truncated, restricted, and unknown result completeness', async () => {
+  const limited = fixture('cad-association')
+  const restricted = fixture('cad-association')
+  restricted.restricted = 2
+  restricted.progress.bytes_read = restricted.progress.bytes_total
+  const unknown = fixture('cad-association')
+  delete unknown.restricted
+  unknown.progress = null
+  const mismatched = fixture('cad-association')
+  mismatched.count = 2
+  mismatched.progress.bytes_read = mismatched.progress.bytes_total
+  const capped = fixture('cad-association')
+  capped.progress.bytes_read = capped.progress.bytes_total
+  const mock = mockFetch(limited, restricted, unknown, mismatched, capped)
+  const client = createBioIndexClient({ baseUrl: '', fetch: mock.fetch })
+
+  assert.equal((await client.queryAll('global-associations', 'CAD', decodeAssociation, { limit: 1 })).completeness, 'partial')
+  const restrictedResult = await client.queryAll('global-associations', 'CAD', decodeAssociation)
+  assert.equal(restrictedResult.completeness, 'partial')
+  assert.equal(restrictedResult.restricted, 2)
+  const unknownResult = await client.queryAll('global-associations', 'CAD', decodeAssociation)
+  assert.equal(unknownResult.completeness, 'unknown')
+  assert.equal(unknownResult.restricted, null)
+  assert.equal((await client.queryAll('global-associations', 'CAD', decodeAssociation)).completeness, 'unknown')
+  assert.equal((await client.queryAll('global-associations', 'CAD', decodeAssociation, { limit: 1 })).completeness, 'unknown')
+})
+
+test('rejects repeated continuation tokens', async () => {
+  const first = fixture('cad-association')
+  first.continuation = 'repeated'
+  const mock = mockFetch(first, first)
+  const client = createBioIndexClient({ baseUrl: '', fetch: mock.fetch })
+
+  await assert.rejects(client.queryAll('global-associations', 'CAD', decodeAssociation), /repeated continuation token/)
+  assert.equal(mock.calls.length, 2)
+})
+
 test('returns typed prefix matches', async () => {
   const mock = mockFetch(fixture('gene-match'))
   const client = createBioIndexClient({ baseUrl: 'https://example.test', fetch: mock.fetch })
@@ -81,7 +170,7 @@ test('rejects invalid requests, HTTP errors, malformed envelopes, and invalid re
     new Response('Forbidden', { status: 403 }),
     new Response('not JSON'),
     { data: [], count: 0 },
-    { data: [{ name: 'CAD', description: 'CAD', group: 'CARDIOVASCULAR', dichotomous: 2 }] },
+    { count: 1, data: [{ name: 'CAD', description: 'CAD', group: 'CARDIOVASCULAR', dichotomous: 2 }] },
     { ...fixture('cad-association'), data: [{}] },
   )
   const client = createBioIndexClient({ baseUrl: 'https://example.test', fetch: mock.fetch })

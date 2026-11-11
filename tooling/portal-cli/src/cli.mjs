@@ -220,7 +220,13 @@ export async function main(args, root = path.resolve(path.dirname(fileURLToPath(
       return 1;
     }
     try {
-      const { destination, imported, skipped } = await importEffectorCatalog(path.dirname(portal.manifestPath));
+      const portalPath = path.dirname(portal.manifestPath);
+      const configUrl = pathToFileURL(path.join(portalPath, 'portal.config.ts'));
+      const { default: config } = await import(configUrl.href);
+      if (config?.legacyContentImportEnabled !== true) {
+        throw new Error('Legacy content imports are not enabled for this portal.');
+      }
+      const { destination, imported, skipped } = await importEffectorCatalog(portalPath);
       console.log(`Imported ${imported} effector lists into ${destination}; skipped ${skipped} without trait IDs.`);
       return 0;
     } catch (error) {

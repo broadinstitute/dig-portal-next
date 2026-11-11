@@ -196,6 +196,38 @@ test('imports only published public effector lists and preserves the previous fi
   assert.equal(readFileSync(result.destination, 'utf8'), saved);
 });
 
+test('requires explicit pre-go-live permission before fetching legacy content', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests += 1;
+    return Response.json({ data: [{ attributes: {
+      status: true,
+      field_page_mode: 'public',
+      field_page_id: 'egl_241',
+      field_data_type: 'direct_csv',
+      field_data_points: 'Trait ID,Effector list name,Title,Citation,PMID,Page ID\nCAD,List,Title,Journal,123,page_1',
+    } }] });
+  };
+
+  for (const enabled of [undefined, false, true]) {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', {
+      name: '@dig-portal/cmd',
+      type: 'module',
+      scripts: { 'validate-content': 'node validate.mjs' },
+    });
+    const app = path.join(root, 'apps', 'cmd');
+    const property = enabled === undefined ? '' : `legacyContentImportEnabled: ${enabled}`;
+    writeFileSync(path.join(app, 'portal.config.ts'), `export default { ${property} };\n`);
+
+    assert.equal(await main(['content:import', 'cmd', 'effector-genes'], root), enabled ? 0 : 1);
+    assert.equal(existsSync(path.join(app, 'content', 'effector-lists', 'catalog.json')), enabled === true);
+  }
+  assert.equal(requests, 1);
+});
+
 test('rejects shared-package dependencies on application packages', async (t) => {
   const root = createWorkspace(t);
   createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });

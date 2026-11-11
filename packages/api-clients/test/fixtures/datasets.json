@@ -1,0 +1,25 @@
+{
+  "count": 2,
+  "data": [
+    {
+      "name": "GWAS_CADT2D",
+      "description": "Joint T2D-CHD GWAS",
+      "community": null,
+      "phenotypes": ["CAD", "CADinNonT2D", "CADinT2D", "T2D"],
+      "ancestry": "Mixed",
+      "ancestry_name": "Mixed",
+      "tech": "GWAS",
+      "subjects": 265678
+    },
+    {
+      "name": "Zekavat2021_RetinalLayerThickness_EU",
+      "description": "Retinal layer thickness GWAS",
+      "community": "ocular",
+      "phenotypes": ["CSI", "GCC", "GCL", "INL", "IPL", "OPL", "PS", "RNFL", "RPE"],
+      "ancestry": "EU",
+      "ancestry_name": null,
+      "tech": "GWAS",
+      "subjects": 33129
+    }
+  ]
+}

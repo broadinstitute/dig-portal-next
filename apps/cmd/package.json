@@ -8,7 +8,7 @@
     "validate-content": "node ./tools/validate-content.mjs",
     "dev": "nuxt dev",
     "postinstall": "nuxt prepare",
-    "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs",
+    "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/layer-shadowing.test.mjs",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {

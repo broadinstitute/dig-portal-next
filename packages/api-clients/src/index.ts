@@ -1,4 +1,4 @@
-import type { Phenotype } from '@dig-portal/domain'
+import type { Phenotype, PortalDataset } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -14,6 +14,13 @@ export interface BioIndexPage<T> {
   readonly continuation: string | null
   readonly restricted?: number
   readonly progress?: BioIndexProgress | null
+}
+
+export interface BioIndexQueryResult<T> {
+  readonly data: readonly T[]
+  readonly completeness: 'complete' | 'partial' | 'unknown'
+  readonly restricted: number | null
+  readonly progress: BioIndexProgress | null
 }
 
 export interface BioIndexRequestOptions {
@@ -106,7 +113,7 @@ function decodeRecords<T>(data: unknown[], decoder: BioIndexDecoder<T>, path: st
 
 function optionalNonnegativeNumber(value: unknown, field: string): number | undefined {
   if (value === undefined) return undefined
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
     throw new BioIndexResponseError(`BioIndex response has an invalid ${field}.`)
   }
   return value
@@ -160,6 +167,33 @@ function decodePhenotype(value: unknown): Phenotype {
   }
 }
 
+function decodeDataset(value: unknown): PortalDataset {
+  if (!isRecord(value)
+    || typeof value.name !== 'string'
+    || typeof value.description !== 'string'
+    || !Array.isArray(value.phenotypes)
+    || !value.phenotypes.every((phenotype): phenotype is string => typeof phenotype === 'string')
+    || typeof value.ancestry !== 'string'
+    || (value.ancestry_name !== null && typeof value.ancestry_name !== 'string')
+    || typeof value.tech !== 'string'
+    || typeof value.subjects !== 'number'
+    || !Number.isSafeInteger(value.subjects)
+    || value.subjects < 0
+    || (value.community !== null && typeof value.community !== 'string')) {
+    throw new BioIndexResponseError('Invalid portal dataset metadata.')
+  }
+  return {
+    name: value.name,
+    description: value.description,
+    phenotypes: value.phenotypes,
+    ancestry: value.ancestry,
+    ancestryName: value.ancestry_name,
+    technology: value.tech,
+    subjects: value.subjects,
+    community: value.community,
+  }
+}
+
 function decodeString(value: unknown): string {
   if (typeof value !== 'string') throw new BioIndexResponseError('Expected a string match.')
   return value
@@ -198,20 +232,67 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
     return decodePage(response, decoder, path)
   }
 
+  async function queryPage<T>(index: string, query: string, decoder: BioIndexDecoder<T>, requestOptions: BioIndexQueryOptions = {}): Promise<BioIndexPage<T>> {
+    const path = indexPath('query', index)
+    requireDecoder(decoder)
+    const response = await request(path, queryParameters(query, requestOptions), requestOptions.signal)
+    return decodePage(response, decoder, path)
+  }
+
+  async function portalMetadata<T>(path: string, group: string, decoder: BioIndexDecoder<T>, requestOptions: BioIndexRequestOptions): Promise<readonly T[]> {
+    if (typeof group !== 'string' || group.length === 0) throw new TypeError('BioIndex portal group must not be empty.')
+    const response = await request(path, new URLSearchParams({ q: group }), requestOptions.signal)
+    if (!Array.isArray(response.data) || !Number.isSafeInteger(response.count) || response.count !== response.data.length) {
+      throw new BioIndexResponseError(`BioIndex response from ${path} has an invalid or incomplete count.`)
+    }
+    return decodeRecords(response.data, decoder, path)
+  }
+
   return {
     async phenotypes(group: string, requestOptions: BioIndexRequestOptions = {}): Promise<readonly Phenotype[]> {
-      if (typeof group !== 'string' || group.length === 0) throw new TypeError('BioIndex phenotype group must not be empty.')
-      const path = '/api/portal/phenotypes'
-      const response = await request(path, new URLSearchParams({ q: group }), requestOptions.signal)
-      if (!Array.isArray(response.data)) throw new BioIndexResponseError(`BioIndex response from ${path} has invalid data.`)
-      return decodeRecords(response.data, decodePhenotype, path)
+      return portalMetadata('/api/portal/phenotypes', group, decodePhenotype, requestOptions)
     },
 
-    async query<T>(index: string, query: string, decoder: BioIndexDecoder<T>, requestOptions: BioIndexQueryOptions = {}): Promise<BioIndexPage<T>> {
-      const path = indexPath('query', index)
-      requireDecoder(decoder)
-      const response = await request(path, queryParameters(query, requestOptions), requestOptions.signal)
-      return decodePage(response, decoder, path)
+    async datasets(group: string, requestOptions: BioIndexRequestOptions = {}): Promise<readonly PortalDataset[]> {
+      return portalMetadata('/api/portal/datasets', group, decodeDataset, requestOptions)
+    },
+
+    query: queryPage,
+
+    async queryAll<T>(index: string, query: string, decoder: BioIndexDecoder<T>, requestOptions: BioIndexQueryOptions = {}): Promise<BioIndexQueryResult<T>> {
+      let page = await queryPage(index, query, decoder, requestOptions)
+      const data: T[] = []
+      const tokens = new Set<string>()
+      let restricted: number | null = 0
+      let hasRestrictedRecords = false
+      let countsMatch = true
+
+      while (true) {
+        for (const record of page.data) data.push(record)
+        countsMatch &&= page.count === page.data.length
+        if (page.restricted === undefined) {
+          restricted = null
+        } else {
+          hasRestrictedRecords ||= page.restricted > 0
+          if (restricted !== null) restricted += page.restricted
+        }
+        if (page.continuation === null) break
+        if (tokens.has(page.continuation)) throw new BioIndexResponseError('BioIndex returned a repeated continuation token.')
+        tokens.add(page.continuation)
+        page = await continuePage(page.continuation, decoder, { signal: requestOptions.signal })
+      }
+
+      const progress = page.progress ?? null
+      const { bytesRead, bytesTotal } = progress ?? {}
+      let completeness: BioIndexQueryResult<T>['completeness'] = 'unknown'
+      if (hasRestrictedRecords || (bytesRead !== undefined && bytesTotal !== undefined && bytesRead < bytesTotal)) {
+        completeness = 'partial'
+      } else if (restricted !== null && countsMatch
+        && (requestOptions.limit === undefined || data.length < requestOptions.limit)
+        && bytesRead !== undefined && bytesRead === bytesTotal) {
+        completeness = 'complete'
+      }
+      return { data, completeness, restricted, progress }
     },
 
     async match(index: string, query: string, requestOptions: BioIndexQueryOptions = {}): Promise<BioIndexPage<string>> {
