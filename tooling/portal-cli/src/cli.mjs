@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import spawn from 'cross-spawn';
+import { affectedPortals } from './affected.mjs';
 import { validateDependencyDirection } from './boundaries.mjs';
 import { importEffectorCatalog } from './content-import.mjs';
 
@@ -207,6 +208,19 @@ export async function main(args, root = path.resolve(path.dirname(fileURLToPath(
   }
   if (command === 'test' && rest.length === 0) return runTests(root);
   if (command === 'typecheck' && rest.length === 0) return runSharedPackageScripts(root, 'typecheck');
+  if (command === 'affected') {
+    if (rest.length !== 1 || !rest[0]) {
+      console.error('Usage: pnpm portal affected <manifest-directory>');
+      return 2;
+    }
+    try {
+      for (const portal of affectedPortals(root, discoverPackages(root), rest[0])) console.log(portal);
+      return 0;
+    } catch (error) {
+      console.error(`Affected selection failed: ${error.message}`);
+      return 1;
+    }
+  }
   if (command === 'content:import') {
     const [portalId, dataset] = rest;
     if (rest.length !== 2 || !/^[a-z0-9][a-z0-9_-]*$/.test(portalId ?? '') || dataset !== 'effector-genes') {
@@ -238,7 +252,7 @@ export async function main(args, root = path.resolve(path.dirname(fileURLToPath(
     return runPortalCommand(root, command, rest[0], rest.slice(1));
   }
   if (command === '--help' || command === '-h' || command === undefined) {
-    console.log('Usage: pnpm portal <list|validate|test|dev|typecheck|build|content:import> [portal-id] [arguments]');
+    console.log('Usage: pnpm portal <list|validate|test|dev|typecheck|build|affected|content:import> [arguments]');
     return 0;
   }
 

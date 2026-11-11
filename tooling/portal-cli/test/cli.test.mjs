@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { affectedPortals } from '../src/affected.mjs';
 import { validateDependencyDirection } from '../src/boundaries.mjs';
 import { discoverPackages, main, runSharedPackageScripts, validateWorkspace } from '../src/cli.mjs';
 import { importEffectorCatalog } from '../src/content-import.mjs';
@@ -31,6 +33,50 @@ function createPackage(root, workspace, directory, manifest) {
   const packageDir = path.join(root, workspace, directory);
   mkdirSync(packageDir, { recursive: true });
   writeFileSync(path.join(packageDir, 'package.json'), JSON.stringify(manifest));
+}
+
+function writeFixture(root, relative, contents) {
+  const file = path.join(root, relative);
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, contents);
+}
+
+function git(root, ...args) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+function commitFixture(root, message) {
+  git(root, 'add', '--all');
+  git(root, '-c', 'user.name=Portal Test', '-c', 'user.email=portal-test@example.invalid', 'commit', '--quiet', '-m', message);
+  return git(root, 'rev-parse', 'HEAD');
+}
+
+function createAffectedFixture(t, mskDependsOnShared = false) {
+  const root = createWorkspace(t);
+  const manifests = mkdtempSync(path.join(os.tmpdir(), 'portal-manifests-'));
+  t.after(() => rmSync(manifests, { recursive: true, force: true }));
+  createPackage(root, 'apps', 'cmd', {
+    name: '@dig-portal/cmd',
+    dependencies: { '@dig-portal/shared': 'workspace:*' },
+  });
+  createPackage(root, 'apps', 'msk', {
+    name: '@dig-portal/msk',
+    ...(mskDependsOnShared && { dependencies: { '@dig-portal/shared': 'workspace:*' } }),
+  });
+  createPackage(root, 'packages', 'shared', { name: '@dig-portal/shared', version: '1.0.0' });
+  writeFixture(root, 'packages/shared/index.js', 'export const value = 1;\n');
+  writeFixture(root, 'apps/msk/docs/notes.md', '# Notes\n');
+  writeFixture(root, 'apps/msk/content/README.md', '# Published content\n');
+  writeFixture(root, 'docs/status.md', '# Status\n');
+  git(root, 'init', '--quiet', '-b', 'main');
+  const baseline = commitFixture(root, 'fixture baseline');
+  return { root, manifests, baseline };
+}
+
+function writeManifest(directory, portal, commit) {
+  writeFileSync(path.join(directory, `${portal}.json`), JSON.stringify({ portal, commit }));
 }
 
 test('validates the workspace and unique package names', (t) => {
@@ -143,6 +189,87 @@ test('runs shared package scripts without running application scripts', (t) => {
 
   assert.equal(runSharedPackageScripts(root, 'test'), 0);
   assert.equal(readFileSync(path.join(packageDir, 'ran.txt'), 'utf8'), 'ok');
+});
+
+test('selects graph dependents without treating content Markdown as documentation', async (t) => {
+  const { root, manifests, baseline } = createAffectedFixture(t);
+  writeFixture(root, 'packages/shared/index.js', 'export const value = 2;\n');
+  writeFixture(root, 'apps/msk/docs/notes.md', '# Updated notes\n');
+  const sharedCommit = commitFixture(root, 'shared code and documentation');
+  writeManifest(manifests, 'cmd', baseline);
+  writeManifest(manifests, 'msk', baseline);
+
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['cmd']);
+  const log = t.mock.method(console, 'log', () => {});
+  assert.equal(await main(['affected', manifests], root), 0);
+  assert.deepEqual(log.mock.calls.map(({ arguments: args }) => args[0]), ['cmd']);
+  log.mock.restore();
+
+  writeFixture(root, 'apps/msk/content/README.md', '# Updated published content\n');
+  const contentCommit = commitFixture(root, 'update content');
+  writeManifest(manifests, 'cmd', sharedCommit);
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['msk']);
+
+  writeManifest(manifests, 'msk', contentCommit);
+  writeFixture(root, 'apps/msk/app/pages/guide.md', '# Page source\n');
+  const pageCommit = commitFixture(root, 'add Markdown page source');
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['msk']);
+
+  writeManifest(manifests, 'msk', pageCommit);
+  writeFixture(root, 'apps/msk/content/docs/topic.md', '# Content under docs\n');
+  commitFixture(root, 'add content under docs');
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['msk']);
+});
+
+test('compares each portal to its own last successful build', (t) => {
+  const { root, manifests, baseline } = createAffectedFixture(t, true);
+  writeFixture(root, 'packages/shared/index.js', 'export const value = 2;\n');
+  const newer = commitFixture(root, 'change shared package');
+  writeManifest(manifests, 'cmd', newer);
+  writeManifest(manifests, 'msk', baseline);
+
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['msk']);
+});
+
+test('ignores documentation-only changes and rebuilds all portals for global changes', (t) => {
+  const { root, manifests, baseline } = createAffectedFixture(t);
+  writeManifest(manifests, 'cmd', baseline);
+  writeManifest(manifests, 'msk', baseline);
+  writeFixture(root, 'docs/status.md', '# Updated status\n');
+  writeFixture(root, 'apps/msk/docs/notes.md', '# Updated notes\n');
+  commitFixture(root, 'documentation only');
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), []);
+
+  writeFixture(root, 'pnpm-lock.yaml', 'lockfileVersion: 9\n');
+  commitFixture(root, 'global lockfile');
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['cmd', 'msk']);
+});
+
+test('handles first builds and rejects malformed manifests and dirty worktrees', (t) => {
+  const { root, manifests, baseline } = createAffectedFixture(t);
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['cmd', 'msk']);
+  writeManifest(manifests, 'cmd', baseline);
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['msk']);
+
+  writeFileSync(path.join(manifests, 'msk.json'), '{"portal":"msk","commit":"short"}');
+  assert.throws(() => affectedPortals(root, discoverPackages(root), manifests), /full commit SHA/);
+  writeManifest(manifests, 'msk', 'f'.repeat(40));
+  assert.throws(() => affectedPortals(root, discoverPackages(root), manifests), /git failed/);
+  writeFixture(root, 'apps/cmd/untracked.js', 'export const value = 1;\n');
+  assert.throws(() => affectedPortals(root, discoverPackages(root), manifests), /clean working tree/);
+});
+
+test('rebuilds a portal whose previous build is not an ancestor of HEAD', (t) => {
+  const { root, manifests, baseline } = createAffectedFixture(t);
+  writeFixture(root, 'packages/shared/index.js', 'export const value = 2;\n');
+  const otherBranch = commitFixture(root, 'different history');
+  git(root, 'switch', '--quiet', '--detach', baseline);
+  writeFixture(root, 'apps/msk/content/README.md', '# Divergent content\n');
+  const head = commitFixture(root, 'divergent history');
+  writeManifest(manifests, 'cmd', otherBranch);
+  writeManifest(manifests, 'msk', head);
+
+  assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['cmd']);
 });
 
 test('imports only published public effector lists and preserves the previous file on failure', async (t) => {

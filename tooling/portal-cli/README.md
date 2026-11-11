@@ -1,0 +1,15 @@
+# Portal CLI
+
+## Affected portals
+
+`pnpm portal affected <manifest-directory>` prints one affected application ID per line. The directory contains `<portal-id>.json` files from the **last successful build** for the relevant environment; each must include the portal ID and full Git commit SHA:
+
+```json
+{ "portal": "cmd", "commit": "0123456789abcdef0123456789abcdef01234567" }
+```
+
+The caller must retain the previous manifest if a build fails or is skipped. A portal without a manifest is selected for its first build; a previous commit outside the current history also selects that portal. Missing commits or malformed manifests fail explicitly. The checkout must be clean, including untracked files, and contain the required history; keep downloaded manifests outside the checkout or in an ignored directory.
+
+Selection uses pnpm's workspace dependency graph and compares each portal with its own manifest. Changes outside application, package, and layer workspaces rebuild every portal. Documentation means the root `docs/`, each workspace package's `docs/`, and conventional root or package-root `README.md`, `AGENTS.md`, `CHANGELOG.md`, and `CONTRIBUTING.md` files. Nuxt Content and public files are never treated as documentation; other files are conservatively considered build inputs. Documentation directories must not be used as application content sources.
+
+This command currently selects application directories only; CMD variants and artifact packaging are not implemented yet.
