@@ -11,4 +11,6 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   ui: { fonts: false },
   app: { head: { title: portal.title } },
+  // Build-time public setting (D-23); override with NUXT_PUBLIC_BIOINDEX_URL.
+  runtimeConfig: { public: { bioindexUrl: 'https://bioindex.hugeamp.org' } },
 })

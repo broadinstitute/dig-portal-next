@@ -12,9 +12,18 @@ importers:
 
   apps/cmd:
     dependencies:
+      '@dig-portal/api-clients':
+        specifier: workspace:*
+        version: link:../../packages/api-clients
       '@dig-portal/content':
         specifier: workspace:*
         version: link:../../packages/content
+      '@dig-portal/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@dig-portal/feature-phenotype':
+        specifier: workspace:*
+        version: link:../../packages/feature-phenotype
       '@dig-portal/platform':
         specifier: workspace:*
         version: link:../../layers/platform
@@ -86,6 +95,16 @@ importers:
         version: 5.9.3
 
   packages/domain:
+    devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
+  packages/feature-phenotype:
+    dependencies:
+      '@dig-portal/domain':
+        specifier: workspace:*
+        version: link:../domain
     devDependencies:
       typescript:
         specifier: 5.9.3

@@ -14,6 +14,16 @@ test('the static build contains the rendered shell and SPA fallbacks', () => {
   assert.ok(existsSync(path.join(output, '404.html')))
 })
 
+test('the phenotype route ships a prerendered shell and a legacy redirect', () => {
+  const output = path.join(process.cwd(), '.output', 'public')
+  const shell = readFileSync(path.join(output, 'phenotype', 'index.html'), 'utf8')
+  const legacy = readFileSync(path.join(output, 'phenotype.html'), 'utf8')
+
+  assert.match(shell, /<h1[^>]*>(?:(?!<\/h1>)[\s\S])*Phenotype/)
+  assert.match(shell, /Loading phenotype data/)
+  assert.match(legacy, /location\.replace\('\/phenotype' \+ location\.search \+ location\.hash\)/)
+})
+
 test('the static content dump contains the validated effector catalog', (t) => {
   const output = path.join(process.cwd(), '.output', 'public')
   const dump = readFileSync(path.join(output, '__nuxt_content', 'effectorLists', 'sql_dump.txt'), 'utf8')

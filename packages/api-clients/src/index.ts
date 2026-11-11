@@ -303,6 +303,14 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
 
     continuePage,
 
+    phenotypePlotUrl(phenotype: string, plot: 'manhattan' | 'qq', ancestry?: string): string {
+      if (typeof phenotype !== 'string' || phenotype.length === 0) throw new TypeError('A phenotype name is required.')
+      if (plot !== 'manhattan' && plot !== 'qq') throw new TypeError('BioIndex plot must be manhattan or qq.')
+      if (ancestry && !/^[A-Za-z]+$/.test(ancestry)) throw new TypeError('BioIndex ancestry must be an ancestry code.')
+      const segments = [phenotype, ...(ancestry ? [ancestry] : [])].map(encodeURIComponent).join('/')
+      return `${baseUrl}/api/raw/plot/phenotype/${segments}/${plot}.png`
+    },
+
     async continueMatches(token: string, requestOptions: BioIndexRequestOptions = {}): Promise<BioIndexPage<string>> {
       return continuePage(token, decodeString, requestOptions)
     },

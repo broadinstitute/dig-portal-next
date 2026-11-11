@@ -209,3 +209,11 @@ test('propagates cancellation before and while reading the response', async () =
   })
   await assert.rejects(bodyClient.phenotypes('md', { signal: controller.signal }), (error) => error === aborted)
 })
+
+test('builds encoded phenotype plot URLs', () => {
+  const client = createBioIndexClient({ baseUrl: 'https://example.test/', fetch: async () => assert.fail('No request expected') })
+
+  assert.equal(client.phenotypePlotUrl('CAD', 'manhattan'), 'https://example.test/api/raw/plot/phenotype/CAD/manhattan.png')
+  assert.equal(client.phenotypePlotUrl('A/B C', 'qq', 'EU'), 'https://example.test/api/raw/plot/phenotype/A%2FB%20C/EU/qq.png')
+  assert.throws(() => client.phenotypePlotUrl('CAD', 'qq', '../EU'), TypeError)
+})

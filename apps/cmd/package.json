@@ -12,7 +12,10 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@dig-portal/api-clients": "workspace:*",
     "@dig-portal/content": "workspace:*",
+    "@dig-portal/domain": "workspace:*",
+    "@dig-portal/feature-phenotype": "workspace:*",
     "@dig-portal/platform": "workspace:*",
     "@nuxt/content": "3.15.0",
     "@nuxt/ui": "4.12.0",

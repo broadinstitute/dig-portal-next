@@ -1,0 +1,156 @@
+<script setup lang="ts">
+import { ancestryLabel } from '@dig-portal/domain'
+import { ancestryOptions, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState } from '@dig-portal/feature-phenotype'
+import portal from '../../portal.config'
+
+const ALL_ANCESTRIES = '__all__'
+
+const route = useRoute()
+const router = useRouter()
+const bioIndex = useBioIndex()
+
+const state = computed(() => readPhenotypeRouteState(route.query))
+
+const { data: phenotypes, status: phenotypesStatus, error: phenotypesError } = useLazyAsyncData(
+  `phenotypes:${portal.registryGroup}`,
+  (_nuxtApp, { signal }) => bioIndex.phenotypes(portal.registryGroup, { signal }),
+  { server: false, default: () => [] },
+)
+const { data: datasets, status: datasetsStatus } = useLazyAsyncData(
+  `datasets:${portal.registryGroup}`,
+  (_nuxtApp, { signal }) => bioIndex.datasets(portal.registryGroup, { signal }),
+  { server: false, default: () => [] },
+)
+
+const phenotype = computed(() => findPhenotype(phenotypes.value, state.value.phenotype))
+const phenotypeItems = computed(() => phenotypes.value
+  .map(({ name, description }) => ({ value: name, label: description.trim() }))
+  .sort((a, b) => a.label.localeCompare(b.label)))
+const ancestries = computed(() => ancestryOptions(datasets.value))
+const ancestryItems = computed(() => [{ value: ALL_ANCESTRIES, label: 'All ancestries' }, ...ancestries.value])
+const unknownAncestry = computed(() => datasetsStatus.value === 'success'
+  && state.value.ancestry !== ''
+  && !ancestries.value.some(({ value }) => value === state.value.ancestry))
+
+const selectedPhenotype = computed({
+  get: () => state.value.phenotype ?? undefined,
+  set: (name) => {
+    if (name) router.push({ query: phenotypeRouteQuery({ ...state.value, phenotype: name }) })
+  },
+})
+const selectedAncestry = computed({
+  get: () => state.value.ancestry || ALL_ANCESTRIES,
+  set: (code) => {
+    const ancestry = code === ALL_ANCESTRIES ? '' : code
+    router.replace({ query: phenotypeRouteQuery({ ...state.value, ancestry }) })
+  },
+})
+
+const plots = computed(() => {
+  if (!phenotype.value || unknownAncestry.value) return []
+  const ancestry = state.value.ancestry || undefined
+  return [
+    { kind: 'manhattan' as const, title: 'Manhattan plot' },
+    { kind: 'qq' as const, title: 'QQ plot' },
+  ].map(({ kind, title }) => ({ title, url: bioIndex.phenotypePlotUrl(phenotype.value!.name, kind, ancestry) }))
+})
+const failedPlots = ref(new Set<string>())
+
+useHead(() => ({
+  title: phenotype.value ? `${phenotype.value.description} | ${portal.title}` : `Phenotype | ${portal.title}`,
+}))
+</script>
+
+<template>
+  <div class="space-y-8">
+    <div class="space-y-2">
+      <p class="text-sm font-medium text-muted">Phenotype</p>
+      <h1 class="text-3xl font-semibold">
+        <ClientOnly fallback="Phenotype">
+          {{ phenotype?.description ?? 'Phenotype' }}
+        </ClientOnly>
+      </h1>
+    </div>
+
+    <ClientOnly>
+      <template #fallback>
+        <p class="text-muted">Loading phenotype data…</p>
+      </template>
+
+      <div class="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <UFormField label="Phenotype">
+          <USelectMenu
+            v-model="selectedPhenotype"
+            :items="phenotypeItems"
+            value-key="value"
+            :filter-fields="['label', 'value']"
+            :loading="phenotypesStatus === 'pending'"
+            placeholder="Select a phenotype"
+            :search-input="{ placeholder: 'Search phenotypes' }"
+            virtualize
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField label="Ancestry">
+          <USelect
+            v-model="selectedAncestry"
+            :items="ancestryItems"
+            :loading="datasetsStatus === 'pending'"
+            class="w-full"
+          />
+        </UFormField>
+      </div>
+
+      <UAlert
+        v-if="phenotypesError"
+        color="error"
+        title="Phenotypes could not be loaded"
+        description="BioIndex did not respond. Try again later."
+        class="mt-6"
+      />
+      <p v-else-if="phenotypesStatus === 'pending'" class="mt-6 text-muted">
+        Loading phenotypes…
+      </p>
+      <UAlert
+        v-else-if="!state.phenotype"
+        color="neutral"
+        variant="subtle"
+        title="Select a phenotype to view its results."
+        class="mt-6"
+      />
+      <UAlert
+        v-else-if="!phenotype"
+        color="warning"
+        :title="`Unknown phenotype: ${state.phenotype}`"
+        description="Select a phenotype from the list."
+        class="mt-6"
+      />
+      <template v-else>
+        <UAlert
+          v-if="unknownAncestry"
+          color="warning"
+          :title="`Unknown ancestry: ${ancestryLabel(state.ancestry)}`"
+          description="Select an ancestry from the list."
+          class="mt-6"
+        />
+        <section v-else class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" aria-label="Association plots">
+          <UCard v-for="plot in plots" :key="plot.url">
+            <template #header>
+              <h2 class="font-semibold">{{ plot.title }}</h2>
+            </template>
+            <p v-if="failedPlots.has(plot.url)" class="text-muted">
+              No {{ plot.title }} available for this query.
+            </p>
+            <img
+              v-else
+              :src="plot.url"
+              :alt="`${plot.title} for ${phenotype.description}`"
+              class="w-full"
+              @error="failedPlots = new Set(failedPlots).add(plot.url)"
+            >
+          </UCard>
+        </section>
+      </template>
+    </ClientOnly>
+  </div>
+</template>

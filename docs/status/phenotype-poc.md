@@ -9,7 +9,7 @@ _Last updated: 2026-11-10_
 | Item | Choice |
 | --- | --- |
 | Portal | `cmd` (BioIndex registry name `md`), base build only (D-04, D-27a) |
-| Page | `/phenotype` — whole visible legacy page; legacy `/phenotype.html?phenotype=CAD` links must keep working |
+| Page | `/phenotype?phenotype=<id>[&ancestry=<code>]`: one prerendered shell rendered client-side (the architect chose this over a per-phenotype path; not indexable per phenotype, accepted). The whole visible legacy page is in scope. Legacy `/phenotype.html?…` links redirect through a static stub that preserves the query and hash. |
 | Reference example | CAD; other `md` phenotypes (e.g. T2D) must also work |
 | Data | Live BioIndex at runtime; recorded fixtures for tests |
 | UI | Nuxt UI primitives where practical (D-16) |
@@ -25,8 +25,8 @@ Reuse is measured across legacy `src/views/*` pages.
 
 | Section | Also used by | Plan | Status |
 | --- | --- | --- | --- |
-| Search, ancestry selector, title/description | All pages | Build | Not started |
-| Manhattan / QQ plot images | Phenotype only, but simple (BioIndex raw PNGs) | Build | Not started |
+| Search, ancestry selector, title/description | All pages | Build | Done for phenotypes. The selector is phenotype-only for now, because gene and region pages don't exist yet; the legacy search also covers those |
+| Manhattan / QQ plot images | Phenotype only, but simple (BioIndex raw PNGs) | Build | Done, with a per-plot "not available" state |
 | Bottom-line provenance modal | BottomLine page | Build | Not started |
 | Top single-variant associations (filters, table) | Region, gene pages | Build | Not started |
 | Genetic support for genes (PIGEAN tabs) | PIGEAN, Factorization, Gene pages | Build | Not started |
@@ -48,11 +48,11 @@ Simple single-page tables are built rather than deferred: they don't count as si
 | Step | Status |
 | --- | --- |
 | 1. Workspace + `portal` CLI (D-06, D-31a) | In progress — `list`, workspace `validate`, `dev`, `typecheck`, `test`, `build`, and application-level `affected` work; `package`, variant selection, and full schema validation remain |
-| 2. CMD application shell, `portal.config.ts` (D-21) | In progress — minimal Nuxt 4/Nuxt UI shell and typed CMD config build statically; the phenotype route is not yet implemented |
-| 3. Data layer: typed BioIndex client in `packages/api-clients` (D-05, D-13) | In progress — phenotype and dataset metadata, query/match pages, and query continuation/completeness handling work; feature-specific record decoders remain |
+| 2. CMD application shell, `portal.config.ts` (D-21) | In progress. The Nuxt 4/Nuxt UI shell builds statically from the typed CMD config, and the `/phenotype` route exists. The BioIndex base URL is a build-time public setting (`NUXT_PUBLIC_BIOINDEX_URL`, default `https://bioindex.hugeamp.org`, D-23) |
+| 3. Data layer: typed BioIndex client in `packages/api-clients` (D-05, D-13) | In progress. Phenotype and dataset metadata, plot URLs, query/match pages, and query continuation/completeness handling work; feature-specific record decoders remain |
 | 4. Content pipeline: effector-gene import (narrow, see below) | In progress — the published effector catalog imports into a validated data collection; page collections, Studio, and general sanitization remain |
-| 5. Prerender-safety conventions applied to the phenotype route (D-11) | Not started |
-| 6. Phenotype feature sections | Not started |
+| 5. Prerender-safety conventions applied to the phenotype route (D-11) | Applied to the first slice. The data-independent shell and heading are prerendered. Query-dependent UI renders inside `<ClientOnly>`, and data fetches use `server: false`. A smoke test checks the shell and the legacy redirect |
+| 6. Phenotype feature sections | In progress. `packages/feature-phenotype` holds headless route-state, ancestry-option, and lookup logic (D-14); the CMD page owns presentation. Search, ancestry, title, and plots are done |
 | 7. Hosted preview + merge gates (D-31b) | Not started |
 
 Bootstrap CI currently runs workspace validation, CLI tests, and CMD typecheck, static build, and shell smoke test. `validate` now includes an initial D-05 check for declared application dependencies and explicit imports in shared packages and layers. It conservatively rejects Nuxt's `~`, `@`, `#shared`, and `#server` aliases in shared code, including independently configured aliases with those names; use explicit relative or package imports instead.
@@ -86,7 +86,9 @@ Each successful pre-go-live import overwrites the previous catalog. A failed imp
 - **Effector-gene publication state (D-07a)**: the CMS JSON:API reports `status: true` and public mode for `egl_241`. The import checks publication on every run and fails closed if the record is missing, unpublished, or inaccessible; the data endpoint alone does not expose publication state.
 - **Effector-gene trait matching**: legacy uses substring matching, so one phenotype ID can match another's lists; 6 rows list several trait IDs. The import splits IDs for exact matching by the future page.
 - **Effector-gene import lifecycle**: the cutover procedure must set `legacyContentImportEnabled` to `false` before CMS authority ends.
-- **Legacy deep links**: `/phenotype.html?phenotype=CAD` needs a static alias or nginx rule on the preview host.
+- **Legacy deep links**: resolved without nginx. `public/phenotype.html` is a static `noindex` stub that runs `location.replace('/phenotype' + search + hash)` and has a no-script link.
+- **Browser access to BioIndex**: the page calls `bioindex.hugeamp.org` cross-origin. It worked from `localhost` in the VS Code integrated browser on 2026-11-10: phenotypes, datasets, and plots loaded. Scripted clients receive a Cloudflare managed challenge, and that browser may already hold Cloudflare clearance, so preview-host behavior is unverified. The fallback is a build-time switch to `bioindex-ext.hugeamp.org`, which sends `Access-Control-Allow-Origin: *`. Missing plots return JSON 404s that the browser blocks as cross-origin reads (ORB); the image error handler still shows the "not available" message.
+- **Ancestry options**: as in legacy, the list holds every ancestry in the portal's datasets, not only those with results for the selected phenotype. Ancestries without plots show the "not available" message.
 - **Preview hosting**: `cmd.next.hugeamp.org` did not resolve from this environment on 2026-11-10; nginx and CI deployment access remain unverified.
 - **CS2CT robustness**: the legacy page throws a null-name error during CS2CT initialization; the rebuild needs explicit loading, empty and error states.
 - **CI portability**: pnpm reports ignored `esbuild` and `vue-demi` install scripts. The Windows typecheck and static build pass without them; the Linux workflow has not yet run.
@@ -96,6 +98,7 @@ Each successful pre-go-live import overwrites the previous catalog. A failed imp
 
 ## Log
 
+- 2026-11-10 — Added the first phenotype slice: the `/phenotype` route with a searchable, virtualized phenotype selector, an ancestry selector, title, and Manhattan/QQ plots, plus the legacy `.html` redirect stub. Logic lives in the new `@dig-portal/feature-phenotype` package (4 tests), and the plot URL builder in `api-clients`. Verified CMD typecheck, the static build, and 6 smoke tests. In a browser against live BioIndex, checked CAD, T2D selection (the URL updates and the ancestry is kept), the EU and GME ancestries (GME has no plots), the unknown-phenotype state, and the legacy redirect.
 - 2026-11-10 — Added application-level affected selection using pnpm's graph and one last-successful commit per portal. Focused Git-backed tests cover shared dependents, per-portal baselines, Markdown content, documentation-only and global changes, initial builds, invalid manifests, dirty worktrees, and divergent history. Variant and package-level selection remain.
 - 2026-11-10 — Deferred Studio OAuth setup and the production publish test at the architect's request; continue independent foundation work.
 - 2026-11-10 — With permission, prepared a private throwaway GitHub repository and content branch containing only synthetic fixtures. A separate Studio SSR build read the sibling content but did not serve its existing media; Git publishing awaits OAuth setup. Verified the pinned Studio version's login-route environment variable behavior without using real credentials.
