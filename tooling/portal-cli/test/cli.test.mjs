@@ -682,6 +682,84 @@ test("fails dependency validation on malformed CSS and inline Vue CSS", async (t
     assert.match(errors.join("\n"), /BrokenStyle\.vue.*cannot be parsed as CSS/);
 });
 
+test("rejects literal and broad import.meta.glob patterns that match application files", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "apps/cmd/target.ts", 'export const value = 1;');
+    writeFixture(root, "apps/cmd/private.ts", 'export const value = 2;');
+    writeFixture(root, "apps/cmd/[data]/target.ts", 'export const value = 3;');
+    writeFixture(root, "apps/cmd/.hidden/secret.ts", 'export const value = 4;');
+    writeFixture(root, "packages/shared/globs.ts", [
+        'import.meta.glob("../../apps/cmd/*.ts");',
+        'import.meta.glob("../../{apps,packages}/**/*.ts");',
+        'import.meta.glob(["../../**/*.ts", "!../../apps/cmd/private.ts"]);',
+        'import.meta.glob("./*.ts", { base: "../../apps/cmd", eager: true });',
+        String.raw`import.meta.glob("../../app\u0073/cmd/**/*.ts");`,
+        'import.meta.glob("./*.TS", { base: "../../apps/cmd", caseSensitive: false });',
+        'import.meta.glob("./*.ts", { base: "../../apps/cmd/[data]" });',
+        'import.meta.glob("../../apps/cmd/**/secret.ts", { exhaustive: true });',
+    ].join('\n'));
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 8, errors.join('\n'));
+    assert.match(errors.join('\n'), /globs\.ts.*import\.meta\.glob.*apps\/cmd\/target\.ts/);
+    assert.equal(await main(['validate'], root), 1);
+});
+
+test("checks globs in Vue scripts and script setup", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "layers", "platform", { name: "@dig-portal/platform" });
+    writeFixture(root, "apps/cmd/target.ts", 'export const value = 1;');
+    writeFixture(root, "layers/platform/Globs.vue", '<template><div /></template><script lang="ts">const normal = import.meta.glob("../../apps/cmd/*.ts"); export default {};</script><script setup lang="ts">const setup = import.meta.glob("../../apps/cmd/*.ts");</script>');
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 2, errors.join('\n'));
+    assert.match(errors.join('\n'), /Globs\.vue.*import\.meta\.glob/);
+});
+
+test("allows shared globs and exclusions, ignoring comments, strings and generated sources", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "apps/cmd/target.ts", 'export const value = 1;');
+    writeFixture(root, "packages/shared/allowed.ts", [
+        'throw new Error("validation must not execute source");',
+        'import.meta.glob("./*.ts");',
+        'import.meta.glob("./*.ts", { base: "." });',
+        'import.meta.glob("../../apps/cmd/**/secret.ts");',
+        'import.meta.glob(["../../**/*.ts", "!../../apps/**"] as const);',
+        '// import.meta.glob("../../apps/cmd/*.ts");',
+        'const text = \'import.meta.glob("../../apps/cmd/*.ts")\';',
+    ].join('\n'));
+    writeFixture(root, "apps/cmd/.hidden/secret.ts", 'export const value = 1;');
+    writeFixture(root, "packages/shared/Widget.tsx", 'export const widget = <div />; const files = import.meta.glob("./*.tsx");');
+    for (const directory of ['.data', '.nuxt-dev', '.output', 'node_modules', 'dist']) writeFixture(root, `packages/shared/${directory}/ignored.ts`, 'import.meta.glob("~/private.ts");');
+    assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
+});
+
+test("reports glob patterns and options that require unresolved runtime or app-root configuration", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "packages/shared/unresolved.ts", [
+        'const pattern = "./*.ts"; import.meta.glob(pattern);',
+        'import.meta.glob("./*.ts", { base: pattern });',
+        'import.meta.glob("./*.ts", { ...options });',
+        'import.meta.glob("/app/*.ts");',
+        'import.meta.glob("~/app/*.ts");',
+    ].join('\n'));
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 5, errors.join('\n'));
+    assert.match(errors.join('\n'), /cannot analyze import\.meta\.glob/);
+});
+
+test("fails dependency validation on malformed script source instead of skipping glob analysis", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "packages/shared/broken.ts", 'const files = import.meta.glob(');
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.match(errors.join('\n'), /broken\.ts.*cannot be parsed for glob dependency validation/);
+});
+
 test("allows shared dependencies and applications importing shared code", async (t) => {
     const root = createWorkspace(t);
     createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });

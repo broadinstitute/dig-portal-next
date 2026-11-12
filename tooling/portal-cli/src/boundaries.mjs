@@ -4,18 +4,28 @@ import { fileURLToPath } from 'node:url';
 import { cruise } from 'dependency-cruiser';
 import { parse } from '@vue/compiler-sfc';
 import { cssImports } from './css-imports.mjs';
+import { applicationGlobMatches, scriptGlobs } from './glob-imports.mjs';
 
 const dependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const generatedDirectories = new Set(['node_modules', '.git', '.output', '.data', '.cache', 'dist', 'coverage']);
+const scriptExtensions = new Set(['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts']);
 
 function* sharedSources(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const filename = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       if (!generatedDirectories.has(entry.name) && !entry.name.startsWith('.nuxt')) yield* sharedSources(filename);
-    } else if (entry.isFile() && ['.vue', '.css'].includes(path.extname(entry.name).toLowerCase())) {
+    } else if (entry.isFile() && (['.vue', '.css'].includes(path.extname(entry.name).toLowerCase()) || scriptExtensions.has(path.extname(entry.name).toLowerCase()))) {
       yield filename;
     }
+  }
+}
+
+function* applicationFiles(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const filename = path.join(directory, entry.name);
+    if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== '.git') yield* applicationFiles(filename);
+    else if (entry.isFile()) yield filename;
   }
 }
 
@@ -87,6 +97,21 @@ export async function validateDependencyDirection(root, packages) {
     }
   }
 
+  let appFiles;
+  function validateGlobs(contents, source, language, context = source) {
+    const result = scriptGlobs(contents, source, language);
+    for (const error of result.errors) errors.push(`${context} ${error}.`);
+    for (const glob of result.globs) {
+      try {
+        appFiles ??= existsSync(appsPath) ? [...applicationFiles(appsPath)] : [];
+        const matches = applicationGlobMatches(glob, root, source, appFiles);
+        if (matches.length) errors.push(`${context} import.meta.glob at line ${glob.line} matches application files: ${matches.slice(0, 5).map((file) => path.relative(root, file).split(path.sep).join('/')).join(', ')}${matches.length > 5 ? ` (+${matches.length - 5} more)` : ''}.`);
+      } catch (error) {
+        errors.push(`${context} cannot analyze import.meta.glob at line ${glob.line}: ${error.message}.`);
+      }
+    }
+  }
+
   // Script transpilation does not expose SFC src attributes or CSS imports (D-05).
   for (const directory of sources) {
     for (const filename of sharedSources(path.join(root, directory))) {
@@ -94,6 +119,10 @@ export async function validateDependencyDirection(root, packages) {
       const contents = readFileSync(filename, 'utf8');
       if (path.extname(filename).toLowerCase() === '.css') {
         validateCss(contents, source);
+        continue;
+      }
+      if (scriptExtensions.has(path.extname(filename).toLowerCase())) {
+        validateGlobs(contents, source);
         continue;
       }
       const { descriptor, errors: parseErrors } = parse(contents, { filename });
@@ -106,6 +135,9 @@ export async function validateDependencyDirection(root, packages) {
       }
       for (const [index, style] of descriptor.styles.entries()) {
         if (!style.src && (!style.lang || style.lang.toLowerCase() === 'css')) validateCss(style.content, source, `${source} style ${index + 1}`);
+      }
+      for (const script of [descriptor.script, descriptor.scriptSetup]) {
+        if (script && !script.src) validateGlobs(script.content, source, script.lang || 'js', `${source} ${script.setup ? 'script setup' : 'script'}`);
       }
     }
   }

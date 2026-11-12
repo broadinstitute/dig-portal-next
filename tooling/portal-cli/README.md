@@ -18,8 +18,9 @@ This command currently selects application directories only; CMD variants and ar
 
 `pnpm portal validate` enforces D-05 for shared packages and layers. It checks
 manifest dependencies, explicit script imports, Vue external block `src`
-attributes (template, script, styles and custom blocks), and static CSS `@import`
-targets in `.css` files and inline Vue CSS styles. Relative/absolute paths,
+attributes (template, script, styles and custom blocks), static CSS `@import`
+targets in `.css` files and inline Vue CSS styles, and `import.meta.glob` macros
+in JS/TS/JSX/TSX files and Vue scripts. Relative/absolute paths,
 file URLs, application package names and app-relative Nuxt aliases are checked.
 Vue sources are parsed with a direct, exact-pinned `@vue/compiler-sfc` dependency;
 malformed SFCs fail validation. CSS uses directly pinned PostCSS/value parsers,
@@ -28,9 +29,19 @@ CSS must be parsable by the pinned parser; parse failures fail validation.
 The source scan skips generated output
 and dependency directories, and does not follow symlinked source trees.
 
+Glob analysis parses literal strings/arrays and path-affecting options without
+executing source. Relative patterns and relative `base` paths are matched
+against existing application files, respecting negative patterns, braces,
+`exhaustive` and `caseSensitive`. It does not expand patterns elsewhere on the
+computer. Application metadata scanning excludes dependency/Git directories and
+does not follow symlinks. Malformed scripts, nonliteral glob inputs/options,
+app-root patterns and configured aliases report errors requiring review rather
+than silently passing. Custom alias resolution is not simulated.
+
 This is partial static enforcement. Nuxt auto-imports, config strings,
 Sass/Less and other non-CSS style languages, directives other than `@import`,
-glob/computed references and portal-ID branching
+computed references outside these macros, other script languages, symlinked
+sources, dependency-tree references and portal-ID branching
 still need review. A green validation result does not prove their absence.
 
 ## CMD development output

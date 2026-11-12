@@ -19,7 +19,7 @@ end of a working session with the next actionable steps and verified results.
   deferred CFDE card in `fc932c6`. All planned visible phenotype sections have
   implementations or legacy links. `6ae87c1` extends D-05 validation to external
   Vue block `src` attributes and corrects stale gate notes. This checkpoint adds
-  static CSS `@import` checks for standalone CSS and inline Vue CSS styles.
+  static `import.meta.glob` enforcement following CSS checks in `f3fecdb`.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
@@ -30,7 +30,8 @@ end of a working session with the next actionable steps and verified results.
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
   isolated `portalDev` command was verified on 2026-11-11. Runtime dependencies
   are unchanged; the CLI now directly owns the existing exact-pinned Vue SFC
-  parser 3.5.45, PostCSS 8.5.32 and postcss-value-parser 4.2.0. Only importer
+  parser 3.5.45, PostCSS 8.5.32, postcss-value-parser 4.2.0, TypeScript 5.9.3
+  and picomatch 4.0.7. Only importer
   references were added to the lockfile, without new transitive versions.
   No decisions changed.
 - **Latest fix:** the user reported an effector catalog load failure after
@@ -44,7 +45,7 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this task was clean `c763461`. CSS enforcement, its tests and this handoff
+  for this task was clean `f3fecdb`. Glob enforcement, its tests and this handoff
   are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
@@ -189,6 +190,25 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Glob checkpoint (2026-11-12): baseline regressions detected none of the direct,
+broad or inline-Vue application glob imports. The new AST/matcher check covers
+literal strings/arrays (including safe TS wrappers and JS escapes), relative
+patterns and relative `base`, negative patterns, braces, case sensitivity and
+exhaustive matching. Literal base directories are escaped independently of the
+glob syntax. Only existing application file metadata is inspected; source is
+not executed and patterns are never expanded elsewhere on the computer.
+Application enumeration skips dependency/Git directories and symlinks; generated
+shared sources are skipped. Nonliteral inputs/options, root-relative/configured
+alias patterns and malformed source produce explicit diagnostics. Supported
+scripts are JS/TS/JSX/TSX and Vue scripts/setup. Other languages, macro/computed
+references outside `import.meta.glob`, app dependency-tree references, custom
+alias resolution, symlinks and remaining D-05 gaps still need review. Direct
+TypeScript/picomatch pins reuse existing lock versions. Frozen offline install
+and real workspace validation pass, as do all 105 shared tests (31 CLI,
+33 API-client, 2 content, 39 phenotype-feature) and diff checks. The five focused
+glob tests passed again after adding non-execution, hidden-file and TSX cases.
+Portal runtime code has not changed and earlier app verification still applies.
 
 CSS-import checkpoint (2026-11-12): baseline regressions missed all standalone
 and inline CSS application references. The parser-backed check now detects
@@ -372,8 +392,8 @@ The latest inventory (2026-11-12) returned no browsers and `The browser
 access host is unavailable`. No native-browser retry or preview server was
 started by the agent this session. Preserve the user's isolated port-3000 server.
 
-The current static build includes uncommitted work and is not a release
-artifact. The renderer is dynamically imported, but the build warns about a
+The latest static build predates the tooling-only boundary commits and is not
+a release artifact. The renderer is dynamically imported, but the build warns about a
 client chunk exceeding 500 kB. Browser transfer and graph performance remain
 unmeasured, particularly for T2D/Mixed (315 activities).
 
@@ -414,8 +434,9 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    now has implementations or link cards for every planned visible section.
    Keep regional plots, factors and CFDE deferred. Do not duplicate completed
    data sections or copy the old CS2CT ancestry-first query order.
-   External Vue blocks and static CSS imports are now checked. A next bounded
-   task can cover glob references; keep residual dynamic/auto-import
+   External Vue blocks, static CSS imports and supported literal glob macros are
+   now checked. Next bounded tasks can address config references, portal-ID
+   branching or portal-definition schema validation; keep residual auto-import
    and portal-ID branching limitations explicit. Shared tests/typechecks and
    catalog content validation are already implemented in CI.
 3. Keep the agreed deferral rule: a significant rewrite used on only this
