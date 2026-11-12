@@ -18,8 +18,9 @@ end of a working session with the next actionable steps and verified results.
 - **Resume checkpoint:** global enrichment is committed in `a22cc34`, and the
   deferred CFDE card in `fc932c6`. All planned visible phenotype sections have
   implementations or legacy links. `6ae87c1` extends D-05 validation to external
-  Vue block `src` attributes and corrects stale gate notes. This checkpoint adds
-  static `import.meta.glob` enforcement following CSS checks in `f3fecdb`.
+  Vue block `src` attributes and corrects stale gate notes. CSS checks are in
+  `f3fecdb`, static glob checks in `d12fa46`. This checkpoint adds CMD's app-owned
+  base portal-definition schema to the existing build/content guard.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
@@ -28,8 +29,9 @@ end of a working session with the next actionable steps and verified results.
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
-  isolated `portalDev` command was verified on 2026-11-11. Runtime dependencies
-  are unchanged; the CLI now directly owns the existing exact-pinned Vue SFC
+  isolated `portalDev` command was verified on 2026-11-11. Client behavior is
+  unchanged; `portal.config.ts` uses type-only schema imports. CMD
+  now directly owns the already-locked Zod 3.25.76 for validation. The CLI owns the existing exact-pinned Vue SFC
   parser 3.5.45, PostCSS 8.5.32, postcss-value-parser 4.2.0, TypeScript 5.9.3
   and picomatch 4.0.7. Only importer
   references were added to the lockfile, without new transitive versions.
@@ -45,7 +47,7 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this task was clean `f3fecdb`. Glob enforcement, its tests and this handoff
+  for this task was clean `d12fa46`. CMD schema enforcement, its tests and this handoff
   are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
@@ -190,6 +192,24 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+CMD base-definition checkpoint (2026-11-12): `apps/cmd/portal.schema.ts` is
+owned by CMD and its inferred `PortalDefinition` is type-only imported and
+re-exported by `portal.config.ts` (D-21). `validate-content` checks this schema
+and base ID/directory agreement before checking the catalog; the existing CLI
+build preflight therefore stops invalid definitions before artifact generation.
+The schema covers current identity/registry/title/import flag, unique features,
+finite positive sigma, one collection identifier and safe navigation shapes;
+unknown fields fail validation. It is not a shared portal contract. CMD variants
+must validate their selected artifact IDs under D-27a when implemented; do not
+apply the base directory-identity rule unchanged to variant-selected configs.
+Frozen offline install, workspace validation, shared/CMD typechecks, static
+build, all 11 CMD tests and diff checks pass. The four new schema/build-guard
+tests passed again after the guard used its validated result. The last 105
+shared-test run remains unchanged from the glob checkpoint; it was not repeated
+for this app-only change. The existing localhost catalog returned HTTP 200 /
+9,608 bytes after preparation/typecheck/build; no server was started or stopped.
+General content collections and future portal/variant schemas remain work.
 
 Glob checkpoint (2026-11-12): baseline regressions detected none of the direct,
 broad or inline-Vue application glob imports. The new AST/matcher check covers
@@ -435,8 +455,9 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Keep regional plots, factors and CFDE deferred. Do not duplicate completed
    data sections or copy the old CS2CT ancestry-first query order.
    External Vue blocks, static CSS imports and supported literal glob macros are
-   now checked. Next bounded tasks can address config references, portal-ID
-   branching or portal-definition schema validation; keep residual auto-import
+   now checked. Next bounded tasks can address config references or portal-ID
+   branching. CMD's base definition is validated; future portal/variant and
+   general content schemas remain. Keep residual auto-import
    and portal-ID branching limitations explicit. Shared tests/typechecks and
    catalog content validation are already implemented in CI.
 3. Keep the agreed deferral rule: a significant rewrite used on only this

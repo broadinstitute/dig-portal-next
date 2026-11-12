@@ -1,14 +1,5 @@
-import type { PigeanModel } from '@dig-portal/domain'
-
-export interface PortalDefinition {
-  id: string
-  registryGroup: string
-  title: string
-  legacyContentImportEnabled: boolean
-  enabledFeatures: readonly string[]
-  geneticSupport: PigeanModel
-  navigation: readonly { label: string, href: string }[]
-}
+import type { PortalDefinition } from './portal.schema'
+export type { PortalDefinition } from './portal.schema'
 
 export default {
   id: 'cmd',

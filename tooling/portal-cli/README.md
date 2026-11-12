@@ -56,3 +56,20 @@ artifacts. Production generation retains Nuxt's normal build directory behavior.
 
 Restart servers started before this isolation change once so they pick up the
 updated `dev` script. A page reload clears any failed client-side Content load.
+
+## CMD definition and content validation
+
+`pnpm portal build cmd` runs CMD's `validate-content` script before generation.
+The guard first validates `portal.config.ts` against the app-owned
+`portal.schema.ts`, then validates the imported effector catalog. Invalid config
+or content stops the build before generation. `PortalDefinition` is inferred
+from that schema and re-exported by `portal.config.ts` through type-only imports;
+the schema does not become a runtime import through the public config.
+
+The current base-definition contract checks identity/registry IDs, nonblank
+title and labels, a Boolean import flag, unique feature names, positive finite
+PIGEAN sigma, one gene-set collection identifier and navigation to root-relative
+paths, fragments or credential-free HTTP(S) URLs. Unknown fields are rejected.
+The base portal ID must match the application directory. This is CMD's contract,
+not a shared requirement for other applications. Variant-selected definitions
+and artifact identities still need D-27a-aware validation when variants are built.

@@ -8,7 +8,7 @@
         "validate-content": "node ./tools/validate-content.mjs",
         "dev": "nuxt dev --envName portalDev",
         "postinstall": "nuxt prepare",
-        "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/layer-shadowing.test.mjs ./test/dev-content-isolation.test.mjs",
+        "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/portal-definition.test.mjs ./test/layer-shadowing.test.mjs ./test/dev-content-isolation.test.mjs",
         "typecheck": "nuxt typecheck"
     },
     "dependencies": {
@@ -24,7 +24,8 @@
         "tailwindcss": "4.3.5",
         "vis-network": "10.1.5",
         "vue": "3.5.45",
-        "vue-router": "5.5.0"
+        "vue-router": "5.5.0",
+        "zod": "3.25.76"
     },
     "devDependencies": {
         "@types/node": "24.19.2",
