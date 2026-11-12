@@ -17,15 +17,20 @@ This command currently selects application directories only; CMD variants and ar
 ## Dependency boundaries
 
 `pnpm portal validate` enforces D-05 for shared packages and layers. It checks
-manifest dependencies, explicit script imports and Vue external block `src`
-attributes (template, script, styles and custom blocks). Relative/absolute paths,
+manifest dependencies, explicit script imports, Vue external block `src`
+attributes (template, script, styles and custom blocks), and static CSS `@import`
+targets in `.css` files and inline Vue CSS styles. Relative/absolute paths,
 file URLs, application package names and app-relative Nuxt aliases are checked.
 Vue sources are parsed with a direct, exact-pinned `@vue/compiler-sfc` dependency;
-malformed SFCs fail validation. The external-block scan skips generated output
+malformed SFCs fail validation. CSS uses directly pinned PostCSS/value parsers,
+including quoted targets, `url(...)`, import modifiers and escaped target paths.
+CSS must be parsable by the pinned parser; parse failures fail validation.
+The source scan skips generated output
 and dependency directories, and does not follow symlinked source trees.
 
-This is partial static enforcement. Nuxt auto-imports, config strings, imports
-inside stylesheet bodies, glob/computed references and portal-ID branching
+This is partial static enforcement. Nuxt auto-imports, config strings,
+Sass/Less and other non-CSS style languages, directives other than `@import`,
+glob/computed references and portal-ID branching
 still need review. A green validation result does not prove their absence.
 
 ## CMD development output

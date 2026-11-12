@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { affectedPortals } from "../src/affected.mjs";
@@ -609,6 +610,76 @@ test("fails dependency validation when a shared Vue source cannot be parsed", as
     writeFixture(root, "packages/shared/Broken.vue", "<template><div></template>");
     const errors = await validateDependencyDirection(root, discoverPackages(root));
     assert.match(errors.join("\n"), /Broken\.vue cannot be parsed/);
+});
+
+test("rejects application CSS imports including url functions, modifiers and escaped paths", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    const appCss = path.join(root, "apps/cmd/private.css");
+    writeFixture(root, "apps/cmd/private.css", "a { color: red; }\n");
+    writeFixture(root, "packages/shared/imports.css", [
+        '@import "../../apps/cmd/private.css";',
+        '@import url(../../apps/cmd/private.css);',
+        '@import url("../../apps/cmd/private.css") layer(component) supports(display: grid) screen;',
+        '@IMPORT "~~/assets/private.css";',
+        '@import "@dig-portal/cmd/private.css";',
+        String.raw`@import "@dig-portal/\63 md/private.css";`,
+        String.raw`@import u\72l("@dig-portal/cmd/private.css");`,
+        String.raw`@import "..\2f ..\2f apps\2f cmd\2f private.css";`,
+        `@import "${pathToFileURL(appCss).href}";`,
+        `@import "${appCss.replaceAll("\\", "/")}";`,
+    ].join("\n"));
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 10, errors.join('\n'));
+    assert.match(errors.join("\n"), /imports\.css.*CSS @import.*apps\/cmd\/private/);
+    assert.match(errors.join("\n"), /CSS @import.*~~\/assets/);
+    assert.equal(errors.filter((error) => error.includes('@dig-portal/cmd/private.css')).length, 3);
+    assert.equal(await main(["validate"], root), 1);
+});
+
+test("rejects application imports inside every inline CSS Vue style block", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "layers", "platform", { name: "@dig-portal/platform" });
+    writeFixture(root, "layers/platform/Styled.vue", [
+        '<template><div>Shared</div></template>',
+        '<style scoped>@import "~/private.css";</style>',
+        '<style lang="css">@import url("#shared/private.css");</style>',
+        '<style lang="CSS">@import "@dig-portal/cmd/private.css";</style>',
+    ].join("\n"));
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 3);
+    assert.match(errors.join("\n"), /Styled\.vue.*CSS @import.*#shared\/private/);
+});
+
+test("allows shared and remote CSS imports, ignoring declaration strings, comments and generated output", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "packages/shared/allowed.css", [
+        '@import "./local.css";',
+        '@import url(https://example.org/styles.css) screen;',
+        '@import "@dig-portal/domain/theme.css";',
+        '/* @import "../../apps/cmd/private.css"; */',
+        'a { content: \'@import "../../apps/cmd/private.css";\'; }',
+    ].join("\n"));
+    writeFixture(root, "packages/shared/Styled.vue", '<template><div /></template><style>@import "./allowed.css";</style><style lang="scss">@use "~/mixins";</style>');
+    for (const directory of ["node_modules", ".nuxt-dev", ".output", ".data", "dist"]) {
+        writeFixture(root, `packages/shared/${directory}/Ignored.css`, '@import "~/private.css";');
+    }
+    assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
+});
+
+test("fails dependency validation on malformed CSS and inline Vue CSS", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "packages/shared/broken.css", 'a { color: red;');
+    writeFixture(root, "packages/shared/BrokenStyle.vue", '<template><div /></template><style>a { color: red;</style>');
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 2);
+    assert.match(errors.join("\n"), /broken\.css cannot be parsed as CSS/);
+    assert.match(errors.join("\n"), /BrokenStyle\.vue.*cannot be parsed as CSS/);
 });
 
 test("allows shared dependencies and applications importing shared code", async (t) => {

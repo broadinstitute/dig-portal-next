@@ -18,7 +18,9 @@ end of a working session with the next actionable steps and verified results.
 - **Resume checkpoint:** global enrichment is committed in `a22cc34`, and the
   deferred CFDE card in `fc932c6`. All planned visible phenotype sections have
   implementations or legacy links. `6ae87c1` extends D-05 validation to external
-  Vue block `src` attributes and corrects stale gate notes. A bounded audit of
+  Vue block `src` attributes and corrects stale gate notes. This checkpoint adds
+  static CSS `@import` checks for standalone CSS and inline Vue CSS styles.
+  A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
   The next tasks are foundation-gap verification and browser/hosted QA.
@@ -28,7 +30,9 @@ end of a working session with the next actionable steps and verified results.
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
   isolated `portalDev` command was verified on 2026-11-11. Runtime dependencies
   are unchanged; the CLI now directly owns the existing exact-pinned Vue SFC
-  parser 3.5.45, adding only its lockfile importer reference. No decisions changed.
+  parser 3.5.45, PostCSS 8.5.32 and postcss-value-parser 4.2.0. Only importer
+  references were added to the lockfile, without new transitive versions.
+  No decisions changed.
 - **Latest fix:** the user reported an effector catalog load failure after
   validation ran alongside their dev server. Its dump endpoint returned empty
   HTTP 204 because prepare/typecheck rewrote `.nuxt/content` with a prepare-only
@@ -40,8 +44,8 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this audit was clean `6ae87c1`. All code tasks are committed; this audit
-  checkpoint changes documentation only. Check current HEAD/status rather than interpreting
+  for this task was clean `c763461`. CSS enforcement, its tests and this handoff
+  are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
@@ -185,6 +189,19 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+CSS-import checkpoint (2026-11-12): baseline regressions missed all standalone
+and inline CSS application references. The parser-backed check now detects
+relative/absolute paths, file URLs, application packages, aliases and escaped
+targets across quoted imports and URL functions, including import modifiers.
+Comments and declaration strings do not become dependencies. Shared/remote
+imports pass; generated directories are skipped. Malformed CSS fails validation.
+The two new direct tooling dependencies reuse locked versions. Frozen offline
+install, real workspace validation, diff checks and all 100 shared tests pass
+(26 CLI, 33 API-client, 2 content, 39 phenotype-feature).
+Runtime code is unchanged, so the earlier CFDE app build/typecheck/seven CMD
+tests remain the latest app verification. Sass/Less/other style languages and
+non-`@import` directives remain explicit review gaps. No server was changed.
 
 Layer-shadow audit (2026-11-12): eight consecutive isolated runs of the unchanged
 `apps/cmd/test/layer-shadowing.test.mjs` passed. No concurrent suite reproduction
@@ -397,8 +414,8 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    now has implementations or link cards for every planned visible section.
    Keep regional plots, factors and CFDE deferred. Do not duplicate completed
    data sections or copy the old CS2CT ancestry-first query order.
-   External Vue blocks are now checked. A next bounded task can cover static
-   stylesheet-body imports or glob references; keep residual dynamic/auto-import
+   External Vue blocks and static CSS imports are now checked. A next bounded
+   task can cover glob references; keep residual dynamic/auto-import
    and portal-ID branching limitations explicit. Shared tests/typechecks and
    catalog content validation are already implemented in CI.
 3. Keep the agreed deferral rule: a significant rewrite used on only this

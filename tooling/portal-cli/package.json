@@ -10,7 +10,9 @@
     "@vue/compiler-sfc": "3.5.45",
     "cross-spawn": "7.0.6",
     "csv-parse": "7.0.3",
-    "dependency-cruiser": "18.7.2"
+    "dependency-cruiser": "18.7.2",
+    "postcss": "8.5.32",
+    "postcss-value-parser": "4.2.0"
   },
   "scripts": {
     "test": "node --test ./test/cli.test.mjs"
