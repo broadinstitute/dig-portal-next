@@ -1,4 +1,4 @@
-import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, GeneticCorrelation, PathwayAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
+import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, GlobalEnrichment, GeneticCorrelation, PathwayAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -300,6 +300,19 @@ function supportKey(value: string): string {
   return value
 }
 
+export function decodeGlobalEnrichment(value: unknown): GlobalEnrichment {
+  const row = supportRecord(value)
+  const pValue = supportNumber(row.pValue), snps = supportNumber(row.SNPs), expectedSnps = supportNumber(row.expectedSNPs)
+  const sourceEnrichment = row.enrichment == null ? null : supportNumber(row.enrichment)
+  if (pValue < 0 || pValue > 1 || expectedSnps < 0) throw new BioIndexResponseError('Invalid global-enrichment statistics.')
+  const ratio = expectedSnps > 0 ? snps / expectedSnps : NaN
+  const name = (value: unknown) => value == null || value === '' ? null : supportString(value)
+  return {
+    phenotype: supportString(row.phenotype), ancestry: supportString(row.ancestry), annotation: name(row.annotation), tissue: name(row.tissue), method: name(row.method),
+    pValue, snps, expectedSnps, sourceEnrichment, fold: Number.isFinite(ratio) ? ratio : null,
+  }
+}
+
 export function decodeGeneticCorrelation(value: unknown): GeneticCorrelation {
   const row = supportRecord(value)
   const pValue = supportNumber(row.pValue), correlation = supportNumber(row.rg), standardError = supportNumber(row.stdErr)
@@ -505,6 +518,14 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
         if (row.phenotype !== phenotype || row.gene !== gene || row.sigma !== model.sigma || row.geneSetCollection !== model.geneSetCollection) throw new BioIndexResponseError('Gene-set evidence does not match the requested gene and model.')
         return row
       }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
+    },
+
+    async globalEnrichments(phenotype: string, requestOptions: BioIndexQueryOptions = {}) {
+      return queryAll('global-enrichment', supportKey(phenotype), (value) => {
+        const row = decodeGlobalEnrichment(value)
+        if (row.phenotype !== phenotype) throw new BioIndexResponseError('Global enrichment does not match the requested phenotype.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 2000 })
     },
 
     async geneticCorrelations(phenotype: string, ancestry = '', requestOptions: BioIndexQueryOptions = {}) {

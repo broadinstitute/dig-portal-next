@@ -1,0 +1,88 @@
+{
+  "cad": [
+    {
+      "phenotype": "CAD",
+      "ancestry": "Mixed",
+      "annotation": "enhancer",
+      "tissue": "blood_vessel",
+      "expectedSNPs": 0.13522828064809386,
+      "SNPs": 0.6082086010727467,
+      "enrichment": 4.497643526619221,
+      "pValue": 1.9128960395127658e-25
+    },
+    {
+      "phenotype": "CAD",
+      "ancestry": "Mixed",
+      "annotation": "enhancer",
+      "tissue": "lung",
+      "expectedSNPs": 0.19440132272461788,
+      "SNPs": 0.7002344243924092,
+      "enrichment": 3.602004423521011,
+      "pValue": 1.291769745386745e-22
+    },
+    {
+      "phenotype": "CAD",
+      "ancestry": "Mixed",
+      "annotation": "binding_sites",
+      "tissue": "spleen",
+      "expectedSNPs": 0.002902713766663025,
+      "SNPs": 0.006961775304508695,
+      "enrichment": 2.398367825468368,
+      "pValue": 0.9998419613302492
+    }
+  ],
+  "european": [
+    {
+      "phenotype": "CAD",
+      "ancestry": "EU",
+      "annotation": "enhancer",
+      "tissue": "blood_vessel",
+      "expectedSNPs": 0.13529846841576054,
+      "SNPs": 0.6097487779356002,
+      "enrichment": 4.506693867826314,
+      "pValue": 4.5421382027437254e-21
+    },
+    {
+      "phenotype": "CAD",
+      "ancestry": "EU",
+      "annotation": "enhancer",
+      "tissue": "lung",
+      "expectedSNPs": 0.1945140580065214,
+      "SNPs": 0.6804298283389871,
+      "enrichment": 3.4981010386209443,
+      "pValue": 3.917672301680247e-17
+    }
+  ],
+  "t2d": [
+    {
+      "phenotype": "T2D",
+      "ancestry": "Mixed",
+      "annotation": "enhancer",
+      "tissue": "pancreas",
+      "expectedSNPs": 0.20497631539521685,
+      "SNPs": 0.6231115905345043,
+      "enrichment": 3.03991995042489,
+      "pValue": 2.6065957877331588e-22
+    },
+    {
+      "phenotype": "T2D",
+      "ancestry": "Mixed",
+      "annotation": "binding_sites",
+      "tissue": "pancreas",
+      "expectedSNPs": 0.060740103980890234,
+      "SNPs": 0.4766724687358179,
+      "enrichment": 7.847738767220194,
+      "pValue": 3.053847918882542e-16
+    }
+  ],
+  "negative": {
+    "phenotype": "CAD",
+    "ancestry": "HS",
+    "annotation": "binding_sites",
+    "tissue": "embryonic_tissue",
+    "expectedSNPs": 0.08768212561199253,
+    "SNPs": -1.0554327188453811,
+    "enrichment": -12.037033904901442,
+    "pValue": 0.019028089407585377
+  }
+}

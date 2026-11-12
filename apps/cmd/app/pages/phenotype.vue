@@ -214,6 +214,7 @@ useHead(() => ({
         </section>
         <PhenotypePathways v-if="!unknownAncestry" :key="`pathways:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :ancestry="state.ancestry" />
         <PhenotypeGeneticCorrelations v-if="!unknownAncestry" :key="`correlations:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :phenotypes="phenotypes" :ancestry="state.ancestry" />
+        <PhenotypeGlobalEnrichments v-if="!unknownAncestry" :key="`enrichments:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :ancestry="state.ancestry" />
         <EffectorGeneLists :phenotype="phenotype.name" />
       </template>
     </ClientOnly>

@@ -15,10 +15,12 @@ end of a working session with the next actionable steps and verified results.
 
 ## Current state
 
-- **Resume checkpoint:** this slice started from clean commit `d6310e3`,
-  which includes pathways and all earlier features. Genetic correlations is
-  now implemented in the uncommitted worktree; globally enriched annotations
-  is the next section. The existing port-3000 server's catalog
+- **Resume checkpoint:** this slice started from clean commit `e89c33d`,
+  which includes genetic correlations and all earlier features. Globally
+  enriched annotations is implemented in this checkpoint; the deferred CFDE
+  link card is the next section task. The user now requests a commit after
+  every completed task, with validation and handoff updates before moving on.
+  The existing port-3000 server's catalog
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
   isolated `portalDev` command was verified on 2026-11-11. No new dependencies
   or architecture decisions were introduced.
@@ -32,9 +34,10 @@ end of a working session with the next actionable steps and verified results.
   server needs one restart through `pnpm portal dev cmd --host 127.0.0.1 --no-fork`
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
-- The working branch is `feature/phenotype-poc`; HEAD at resume is `d6310e3`.
-  Pathways and all earlier slices are committed. Genetic correlations, its
-  tests/fixtures and these status updates are uncommitted.
+- The working branch is `feature/phenotype-poc`; the baseline for this slice
+  was `e89c33d`. Global enrichment, its tests/fixtures and these notes belong
+  to the same task commit. Check current HEAD/status rather than interpreting
+  historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
   do not reconstruct or undo that review without new evidence.
@@ -45,7 +48,7 @@ end of a working session with the next actionable steps and verified results.
 - [The CMD phenotype page](../../apps/cmd/app/pages/phenotype.vue) supports
   `/phenotype?phenotype=CAD` and optional `ancestry`, phenotype selection,
   plots, single-variant associations, genetic-support tabs, CS2CT, pathways,
-  genetic correlations, a phenotype/ancestry-filtered dataset table, and
+  genetic correlations, globally enriched annotations, a phenotype/ancestry-filtered dataset table, and
   [effector-gene lists](../../apps/cmd/app/components/EffectorGeneLists.vue).
   A static `phenotype.html` redirect preserves legacy queries and fragments.
 - [The association section](../../apps/cmd/app/components/PhenotypeAssociations.vue)
@@ -58,6 +61,22 @@ end of a working session with the next actionable steps and verified results.
   `assocSort`, `assocOrder`, `assocPage`, and `assocPageSize` query parameters.
   Updates preserve other parameters and the hash. Parent phenotype/ancestry
   selectors reset table state. Region/gene/variant links open the legacy portal.
+- [Global enrichment](../../apps/cmd/app/components/PhenotypeGlobalEnrichments.vue)
+  uses the typed `globalEnrichments(phenotype)` client with a 2,000-record cap.
+  This index accepts only a phenotype key; ancestry is selected locally.
+  After ancestry selection, the legacy shortlist rule is retained: all rows
+  with p < 1e-5 when at least 20 qualify, otherwise the best 20 p-values (or all
+  available when fewer exist). User annotation/tissue/p-value/minimum-fold
+  filters apply afterward; counts and CSV explicitly describe this shortlist.
+  Five headers sort; defaults are ascending p-value and ten-row pages. Raw
+  duplicate rows and p=0 are retained rather than copying legacy grouping and
+  truthiness bugs. Fractional/signed SNP and enrichment estimates are valid.
+  Fold is SNPs/expectedSNPs, null for zero denominator or overflow; null names
+  and fold have explicit display/filter/sort handling. CSV retains all raw
+  statistics and source enrichment separately. Tissue links open legacy pages.
+  URL keys are `enrichAnnotation`, `enrichTissue`, `enrichP`, `enrichFold`,
+  `enrichSort`, `enrichOrder`, `enrichPage`; `__missing__` selects a null name.
+  Local edits preserve other section query values/hash without refetching.
 - [Genetic correlations](../../apps/cmd/app/components/PhenotypeGeneticCorrelations.vue)
   uses typed `geneticCorrelations` queries with verified `phenotype[,ancestry]`
   keys and a 1,000-record cap. Existing page phenotype metadata is passed as a
@@ -159,6 +178,23 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Global-enrichment checkpoint (2026-11-12): typed live CAD returned 1,296 rows
+and T2D 1,512, both complete/unrestricted at limit 2,000. At limit 1,000 both
+were partial. CAD shortlist is 159 overall and 54 EU (216 EU rows); T2D is
+63 overall and the best 20 EU (216 EU rows). Neither had GME rows. Discovery
+and HTTP 400 probes confirm ancestry is not an index key. Sources are in
+[enrichment-sources.md](../../packages/api-clients/test/fixtures/enrichment-sources.md).
+The full data includes signed SNP/enrichment estimates; CAD row 415 is a
+recorded regression against an incorrect nonnegative assumption. Validation,
+shared/CMD typechecks, 93 shared tests (19 CLI, 33 API-client, 2 content,
+39 phenotype-feature), final static build, seven CMD tests and diff checks
+passed. Shared tests use the command-scoped signing override below. The
+historical layer-shadow intermittency remains unresolved despite this green run.
+The ignored `.data/verify-enrichment.mjs` passed shortlist modes, local ancestry,
+labels/links, URL controls/sorting, zero p-values, null names/fold, coverage/
+loading/error/empty/invalid states, pagination, a full 23-row CSV handler from
+a three-row page and escaped text. Browser QA remains pending.
 
 Genetic-correlation checkpoint (2026-11-12): typed live clients decoded CAD
 651/complete, CAD/EU 603/complete, T2D 715/complete and CAD/GME 0/complete,
@@ -268,7 +304,7 @@ the local legacy checkout. The initial Q positivity assumption failed on CAD
 record 243; its unchanged negative-score record is now a regression fixture.
 
 The dataset, effector, provenance, association, genetic-support, CS2CT, pathway
-and genetic-correlation sections have **not** been verified in
+genetic-correlation and global-enrichment sections have **not** been verified in
 a real browser. The architect explicitly authorized localhost HTTP and
 browser checks during this session; that authorization persists. An initial
 forked-server probe timed out; after a restart using `--no-fork`, the
@@ -306,7 +342,7 @@ unmeasured, particularly for T2D/Mixed (315 activities).
 1. Review the worktree without discarding changes. When browser access is
    working, use the existing server or start the CLI command above and check
    datasets, effector lists, provenance, associations, genetic support, CS2CT,
-   pathways and genetic correlations for CAD, T2D, ancestry, empty,
+   pathways, genetic correlations and global enrichment for CAD, T2D, ancestry, empty,
    and error states. Also check modal focus/closing, graph/table/JSON switching,
    keyboard navigation, graph mount/unmount, association URL back/forward,
    filtering/sorting/paging, all four support tabs and gene-set details, partial-result
@@ -317,11 +353,10 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Stop temporary servers started by the agent afterward; leave user-owned servers
    running. Verify CORS and Cloudflare on the hosted preview
    separately; localhost success does not establish hosted behavior.
-2. Continue the [section plan](./phenotype-poc.md#section-plan) with **globally
-   enriched annotations**, then
-   the deferred CFDE link card. Inspect the legacy template/store/components
+2. Continue the [section plan](./phenotype-poc.md#section-plan) with the deferred
+   **CFDE link card**. The planned data sections are implemented. Inspect the legacy template/store/components
    and verify live index discovery, key ordering, score meanings and sample
-   records before adding decoders. CS2CT, pathways and genetic correlations
+   records before adding decoders. CS2CT, pathways, genetic correlations and global enrichment
    are implemented; do not repeat them or
    copy the old ancestry-first key ordering. Reuse the typed clients and
    headless logic already available; keep regional plots/factors deferred.

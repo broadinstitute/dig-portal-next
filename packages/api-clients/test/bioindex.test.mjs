@@ -1,9 +1,52 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { decodeGlobalEnrichment } from '../src/index.ts'
 import { decodeGeneticCorrelation } from '../src/index.ts'
 import { decodePathwayAssociation } from '../src/index.ts'
 import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation, decodePigeanGeneSupport, decodeHugeGeneScore, decodeFalconGeneProbability, decodePigeanGeneSetEvidence, decodeCs2ctRecord } from '../src/index.ts'
+
+test('decodes fractional enrichment SNP values and preserves zero p-values and undefined fold', () => {
+  const raw = fixture('enrichment-records').cad[0]
+  const row = decodeGlobalEnrichment(raw)
+  assert.equal(row.fold, raw.SNPs / raw.expectedSNPs)
+  assert.equal(row.snps, raw.SNPs)
+  assert.equal(row.sourceEnrichment, raw.enrichment)
+  assert.equal(row.method, null)
+  assert.ok(decodeGlobalEnrichment(fixture('enrichment-records').negative).fold < 0)
+  const zero = decodeGlobalEnrichment({ ...raw, SNPs: 0, expectedSNPs: 0, pValue: 0, tissue: null, annotation: null, enrichment: null })
+  assert.equal(zero.fold, null)
+  assert.equal(zero.pValue, 0)
+  assert.equal(zero.tissue, null)
+  assert.equal(decodeGlobalEnrichment({ ...raw, SNPs: Number.MAX_VALUE, expectedSNPs: Number.MIN_VALUE }).fold, null)
+  for (const patch of [{ SNPs: NaN }, { expectedSNPs: -1 }, { pValue: 1.1 }, { enrichment: Infinity }, { tissue: 42 }]) assert.throws(() => decodeGlobalEnrichment({ ...raw, ...patch }), BioIndexResponseError)
+})
+
+test('queries global enrichment by phenotype only, preserving all ancestries and explicit cap', async () => {
+  const raw = fixture('enrichment-records')
+  const envelope = (data) => ({ data, count: data.length, continuation: null, restricted: 0, progress: { bytes_read: 100, bytes_total: 100 } })
+  const mock = mockFetch(envelope([...raw.cad, ...raw.european]), envelope(raw.t2d))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const result = await client.globalEnrichments('CAD', { signal })
+  await client.globalEnrichments('T2D', { signal, limit: 20 })
+  assert.equal(result.completeness, 'complete')
+  assert.deepEqual(new Set(result.data.map((r) => r.ancestry)), new Set(['Mixed', raw.cad.at(-1).ancestry, 'EU']))
+  assert.deepEqual(mock.calls.map(({ url }) => url), ['/bioindex/api/bio/query/global-enrichment?q=CAD&limit=2000', '/bioindex/api/bio/query/global-enrichment?q=T2D&limit=20'])
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  await assert.rejects(client.globalEnrichments('CAD,EU'), TypeError)
+})
+
+test('rejects global enrichment from another phenotype on initial and continuation pages', async () => {
+  const row = fixture('enrichment-records').cad[0]
+  const envelope = (data) => ({ data, count: data.length, continuation: null, restricted: 0, progress: { bytes_read: 100, bytes_total: 100 } })
+  const wrong = envelope([{ ...row, phenotype: 'T2D' }])
+  const mock = mockFetch(wrong, { ...envelope([row]), continuation: 'next', progress: { bytes_read: 50, bytes_total: 100 } }, wrong)
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  await assert.rejects(client.globalEnrichments('CAD'), BioIndexResponseError)
+  await assert.rejects(client.globalEnrichments('CAD'), BioIndexResponseError)
+  assert.match(mock.calls[2].url, /\/cont\?token=next/)
+})
 
 test('decodes recorded genetic correlations, preserving estimates outside [-1, 1] and tiny p-values', () => {
   const raw = fixture('correlation-records')

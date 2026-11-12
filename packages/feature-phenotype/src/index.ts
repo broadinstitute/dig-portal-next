@@ -1,4 +1,4 @@
-import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type GeneticCorrelation, type PathwayAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
+import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type GlobalEnrichment, type GeneticCorrelation, type PathwayAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
 
 export interface PhenotypeRouteState {
   readonly phenotype: string | null
@@ -290,6 +290,73 @@ export function variantAssociationsCsv(records: readonly VariantAssociation[]): 
     record.rsId, record.consequence, record.nearestGenes.join(';'), record.pValue, record.beta,
     associationMetaKey(record.metaTypes), record.dataset, record.source,
   ]))
+}
+
+export type EnrichmentSort = 'tissue' | 'annotation' | 'ancestry' | 'pValue' | 'fold'
+export interface EnrichmentTableState {
+  readonly annotation: string
+  readonly tissue: string
+  readonly pValue: string
+  readonly minimumFold: string
+  readonly sort: EnrichmentSort
+  readonly order: 'asc' | 'desc'
+  readonly page: number
+}
+export const enrichmentQueryKeys = ['enrichAnnotation', 'enrichTissue', 'enrichP', 'enrichFold', 'enrichSort', 'enrichOrder', 'enrichPage'] as const
+export const missingEnrichmentValue = '__missing__'
+export const enrichmentValue = (value: string | null) => value ?? missingEnrichmentValue
+export const enrichmentLabel = (value: string | null) => value === null || value === missingEnrichmentValue ? 'Not recorded' : value.replaceAll('_', ' ')
+
+export function readEnrichmentTableState(query: Readonly<Record<string, unknown>>): EnrichmentTableState {
+  const sort = firstQueryValue(query.enrichSort), page = Number(firstQueryValue(query.enrichPage))
+  return {
+    annotation: firstQueryValue(query.enrichAnnotation) ?? '', tissue: firstQueryValue(query.enrichTissue) ?? '',
+    pValue: firstQueryValue(query.enrichP) ?? '', minimumFold: firstQueryValue(query.enrichFold) ?? '',
+    sort: sort && ['tissue', 'annotation', 'ancestry', 'pValue', 'fold'].includes(sort) ? sort as EnrichmentSort : 'pValue',
+    order: firstQueryValue(query.enrichOrder) === 'desc' ? 'desc' : 'asc', page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+  }
+}
+export function enrichmentTableQuery(state: EnrichmentTableState): Record<string, string> {
+  return {
+    ...(state.annotation ? { enrichAnnotation: state.annotation } : {}), ...(state.tissue ? { enrichTissue: state.tissue } : {}),
+    ...(state.pValue ? { enrichP: state.pValue } : {}), ...(state.minimumFold ? { enrichFold: state.minimumFold } : {}),
+    ...(state.sort !== 'pValue' ? { enrichSort: state.sort } : {}), ...(state.order !== 'asc' ? { enrichOrder: state.order } : {}),
+    ...(state.page !== 1 ? { enrichPage: String(state.page) } : {}),
+  }
+}
+export function enrichmentFilterError(state: EnrichmentTableState): string | null {
+  const error = associationPValueError(state.pValue)
+  if (error) return `P-value filter: ${error}`
+  if (state.minimumFold && (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(state.minimumFold) || !Number.isFinite(Number(state.minimumFold)))) return 'Minimum fold must be a finite number.'
+  if (state.minimumFold && Number(state.minimumFold) === 0 && /[1-9]/.test(state.minimumFold.split(/e/i)[0]!)) return 'Minimum fold is too close to zero to represent.'
+  return null
+}
+/** Apply the legacy shortlist after selecting ancestry and before user filters. */
+export function globalEnrichmentSelection(rows: readonly GlobalEnrichment[], ancestry = '') {
+  const scope = rows.filter((row) => !ancestry || row.ancestry === ancestry)
+  const significant = scope.filter((row) => row.pValue < 1e-5)
+  const mode = significant.length >= 20 ? 'significant' : 'top20'
+  const sorted = sortGlobalEnrichments(mode === 'significant' ? significant : scope, readEnrichmentTableState({}))
+  return { scope, records: mode === 'significant' ? sorted : sorted.slice(0, 20), mode }
+}
+export function filterGlobalEnrichments(rows: readonly GlobalEnrichment[], state: EnrichmentTableState): GlobalEnrichment[] {
+  const error = enrichmentFilterError(state)
+  if (error) throw new RangeError(error)
+  return rows.filter((row) => (!state.annotation || enrichmentValue(row.annotation) === state.annotation) && (!state.tissue || enrichmentValue(row.tissue) === state.tissue)
+    && (!state.pValue || row.pValue <= Number(state.pValue)) && (!state.minimumFold || (row.fold !== null && row.fold >= Number(state.minimumFold))))
+}
+export function sortGlobalEnrichments(rows: readonly GlobalEnrichment[], state: EnrichmentTableState): GlobalEnrichment[] {
+  return rows.slice().sort((a, b) => {
+    const av = a[state.sort], bv = b[state.sort]
+    if (av === null || bv === null) { if (av !== bv) return av === null ? 1 : -1 }
+    const comparison = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av ?? '').localeCompare(String(bv ?? ''))
+    return (state.order === 'desc' ? -comparison : comparison) || String(a.tissue).localeCompare(String(b.tissue))
+      || String(a.annotation).localeCompare(String(b.annotation)) || a.ancestry.localeCompare(b.ancestry) || String(a.method).localeCompare(String(b.method))
+  })
+}
+export function globalEnrichmentsCsv(rows: readonly GlobalEnrichment[]): string {
+  return encodeCsv(['phenotype', 'ancestry', 'annotation', 'tissue', 'method', 'pValue', 'SNPs', 'expectedSNPs', 'enrichment', 'fold'],
+    rows.map((row) => [row.phenotype, row.ancestry, row.annotation, row.tissue, row.method, row.pValue, row.snps, row.expectedSnps, row.sourceEnrichment, row.fold]))
 }
 
 export type CorrelationSort = 'otherPhenotype' | 'pValue' | 'correlation' | 'standardError'

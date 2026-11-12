@@ -1,9 +1,66 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readEnrichmentTableState, enrichmentTableQuery, enrichmentFilterError, enrichmentLabel, globalEnrichmentSelection, filterGlobalEnrichments, sortGlobalEnrichments, globalEnrichmentsCsv } from '../src/index.ts'
 import { readCorrelationTableState, correlationTableQuery, correlationFilterError, eligibleGeneticCorrelations, correlationPhenotypeLabel, filterGeneticCorrelations, sortGeneticCorrelations, geneticCorrelationsCsv } from '../src/index.ts'
 import { readPathwayTableState, pathwayTableQuery, sortPathwayAssociations, pathwayAssociationsCsv } from '../src/index.ts'
 import { readCs2ctState, cs2ctQuery, cs2ctFilterError, cs2ctEligibleRows, cs2ctLabel, cs2ctTissueKey, missingCs2ctTissue, filterCs2ctRows, sortCs2ctRows, cs2ctCsv, cs2ctVariantRegion } from '../src/index.ts'
 import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages, readAssociationTableState, associationTableQuery, associationPValueError, associationMetaSummary, filterVariantAssociations, sortVariantAssociations, associationPage, formatAssociationPValue, formatAssociationEffect, variantAssociationsCsv, readGeneSupportState, geneSupportQuery, geneSupportRows, geneSupportMinimumError, filterGeneSupportRows, sortGeneSupportRows, geneticSupportCsv, geneSupportPlotPoints, geneSupportEvidence } from '../src/index.ts'
+
+const enrichRow = (patch = {}) => ({ phenotype: 'CAD', ancestry: 'Mixed', annotation: 'enhancer', tissue: 'blood_vessel', method: null, pValue: 1e-8, snps: 0.6, expectedSnps: 0.2, sourceEnrichment: 3, fold: 3, ...patch })
+
+test('roundtrips enrichment query controls and validates p-value/fold without underflow', () => {
+  const state = readEnrichmentTableState({ enrichAnnotation: 'enhancer', enrichTissue: '__missing__', enrichP: '1e-8', enrichFold: '2', enrichSort: 'fold', enrichOrder: 'desc', enrichPage: '3' })
+  assert.deepEqual(readEnrichmentTableState(enrichmentTableQuery(state)), state)
+  assert.deepEqual(enrichmentTableQuery(readEnrichmentTableState({ enrichSort: 'invalid', enrichPage: '-2' })), {})
+  for (const query of [{ enrichP: '1.1' }, { enrichP: '1e-999' }, { enrichFold: 'word' }, { enrichFold: 'Infinity' }, { enrichFold: '1e-999' }]) assert.ok(enrichmentFilterError(readEnrichmentTableState(query)))
+  assert.equal(enrichmentFilterError(readEnrichmentTableState({ enrichFold: '-1' })), null)
+  assert.equal(enrichmentFilterError(readEnrichmentTableState({ enrichP: '0', enrichFold: '0' })), null)
+})
+
+test('shortlists enrichment after ancestry selection, retains zero p-values and does not mutate or collapse rows', () => {
+  const significant = Array.from({ length: 21 }, (_, i) => Object.freeze(enrichRow({ tissue: `tissue_${i}`, pValue: i ? 1e-8 : 0 })))
+  const rows = Object.freeze([...significant, enrichRow({ pValue: 1e-5 }), enrichRow({ ancestry: 'EU', pValue: 0.9 })])
+  const all = globalEnrichmentSelection(rows)
+  assert.equal(all.mode, 'significant')
+  assert.equal(all.records.length, 21)
+  assert.equal(all.records[0].pValue, 0)
+  const eu = globalEnrichmentSelection(rows, 'EU')
+  assert.equal(eu.mode, 'top20')
+  assert.equal(eu.records.length, 1)
+  assert.equal(globalEnrichmentSelection(Array.from({ length: 25 }, () => enrichRow({ pValue: .1 }))).records.length, 20)
+  assert.equal(globalEnrichmentSelection(significant.slice(0, 20)).mode, 'significant')
+  assert.equal(globalEnrichmentSelection([enrichRow(), enrichRow()]).records.length, 2)
+  assert.equal(rows.length, 23)
+})
+
+test('filters enrichment by exact identifiers and inclusive bounds, with explicit missing names/fold', () => {
+  const rows = [enrichRow(), enrichRow({ tissue: null, annotation: null, fold: null }), enrichRow({ fold: 0, pValue: 0 })]
+  assert.equal(enrichmentLabel('blood_vessel'), 'blood vessel')
+  assert.equal(enrichmentLabel(null), 'Not recorded')
+  assert.equal(rows[0].tissue, 'blood_vessel')
+  assert.deepEqual(filterGlobalEnrichments(rows, readEnrichmentTableState({ enrichTissue: '__missing__' })), [rows[1]])
+  assert.deepEqual(filterGlobalEnrichments(rows, readEnrichmentTableState({ enrichAnnotation: 'enhancer', enrichP: '1e-8', enrichFold: '3' })), [rows[0]])
+  assert.equal(filterGlobalEnrichments(rows, readEnrichmentTableState({ enrichTissue: 'blood' })).length, 0)
+  assert.deepEqual(filterGlobalEnrichments(rows, readEnrichmentTableState({ enrichP: '0', enrichFold: '0' })), [rows[2]])
+  assert.throws(() => filterGlobalEnrichments(rows, readEnrichmentTableState({ enrichP: 'bad' })), RangeError)
+})
+
+test('sorts enrichment numerically with null values last in both directions', () => {
+  const rows = Object.freeze([enrichRow({ fold: 2 }), enrichRow({ fold: 10 }), enrichRow({ fold: null, tissue: null })])
+  for (const enrichOrder of ['asc', 'desc']) assert.equal(sortGlobalEnrichments(rows, readEnrichmentTableState({ enrichSort: 'fold', enrichOrder })).at(-1).fold, null)
+  assert.equal(sortGlobalEnrichments(rows, readEnrichmentTableState({ enrichSort: 'fold' }))[0].fold, 2)
+  assert.equal(sortGlobalEnrichments(rows, readEnrichmentTableState({ enrichSort: 'tissue', enrichOrder: 'desc' })).at(-1).tissue, null)
+  assert.equal(rows[0].fold, 2)
+})
+
+test('exports all shortlisted filtered enrichment rows with fractional raw values and CSV protection', () => {
+  const rows = Array.from({ length: 23 }, (_, i) => enrichRow({ tissue: `tissue_${i}`, snps: 0.6082086010727467 }))
+  assert.equal(associationPage(rows, 3, 10).records.length, 3)
+  const csv = globalEnrichmentsCsv(rows)
+  assert.equal(csv.trim().split('\r\n').length, 24)
+  assert.match(csv, /0\.6082086010727467/)
+  assert.match(globalEnrichmentsCsv([enrichRow({ tissue: '=A,"B"\nC', fold: null })]), /"'=A,""B""\nC"/)
+})
 
 const corrRow = (patch = {}) => ({ phenotype: 'CAD', otherPhenotype: 'MI', ancestry: 'Mixed', project: 'portal', pValue: 1e-8, correlation: 0.25, standardError: 0.05, ...patch })
 const corrPhenotypes = [{ name: 'MI', description: 'Myocardial infarction' }, { name: 'BMI', description: 'Body mass index' }]

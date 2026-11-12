@@ -59,6 +59,21 @@ export interface VariantAssociation {
   readonly source: string
 }
 
+export interface GlobalEnrichment {
+  readonly phenotype: string
+  readonly ancestry: string
+  readonly annotation: string | null
+  readonly tissue: string | null
+  readonly method: string | null
+  readonly pValue: number
+  /** Fractional and signed estimates are valid; these are not integer variant counts. */
+  readonly snps: number
+  readonly expectedSnps: number
+  readonly sourceEnrichment: number | null
+  /** SNPs / expectedSNPs; null when the denominator is zero or the ratio overflows. */
+  readonly fold: number | null
+}
+
 export interface GeneticCorrelation {
   readonly phenotype: string
   readonly otherPhenotype: string
