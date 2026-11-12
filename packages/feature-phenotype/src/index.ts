@@ -1,4 +1,4 @@
-import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type PathwayAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
+import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type GeneticCorrelation, type PathwayAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
 
 export interface PhenotypeRouteState {
   readonly phenotype: string | null
@@ -290,6 +290,75 @@ export function variantAssociationsCsv(records: readonly VariantAssociation[]): 
     record.rsId, record.consequence, record.nearestGenes.join(';'), record.pValue, record.beta,
     associationMetaKey(record.metaTypes), record.dataset, record.source,
   ]))
+}
+
+export type CorrelationSort = 'otherPhenotype' | 'pValue' | 'correlation' | 'standardError'
+export interface CorrelationTableState {
+  readonly phenotypes: readonly string[]
+  readonly pValue: string
+  readonly minimum: string
+  readonly sort: CorrelationSort
+  readonly order: 'asc' | 'desc'
+  readonly page: number
+}
+export const correlationQueryKeys = ['corrPhenotype', 'corrP', 'corrMin', 'corrSort', 'corrOrder', 'corrPage'] as const
+
+export function readCorrelationTableState(query: Readonly<Record<string, unknown>>): CorrelationTableState {
+  const choices = Array.isArray(query.corrPhenotype) ? query.corrPhenotype : [query.corrPhenotype]
+  const sort = firstQueryValue(query.corrSort), page = Number(firstQueryValue(query.corrPage))
+  return {
+    phenotypes: [...new Set(choices.flatMap((v) => typeof v === 'string' && v.trim() ? [v.trim()] : []))],
+    pValue: firstQueryValue(query.corrP) ?? '', minimum: firstQueryValue(query.corrMin) ?? '',
+    sort: sort && ['otherPhenotype', 'pValue', 'correlation', 'standardError'].includes(sort) ? sort as CorrelationSort : 'pValue',
+    order: firstQueryValue(query.corrOrder) === 'desc' ? 'desc' : 'asc', page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+  }
+}
+
+export function correlationTableQuery(state: CorrelationTableState): Record<string, string | string[]> {
+  return {
+    ...(state.phenotypes.length ? { corrPhenotype: [...state.phenotypes] } : {}), ...(state.pValue ? { corrP: state.pValue } : {}),
+    ...(state.minimum ? { corrMin: state.minimum } : {}), ...(state.sort !== 'pValue' ? { corrSort: state.sort } : {}),
+    ...(state.order !== 'asc' ? { corrOrder: state.order } : {}), ...(state.page !== 1 ? { corrPage: String(state.page) } : {}),
+  }
+}
+
+export function correlationFilterError(state: CorrelationTableState): string | null {
+  const pValueError = associationPValueError(state.pValue)
+  if (pValueError) return `P-value filter: ${pValueError}`
+  if (state.minimum && (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(state.minimum) || !Number.isFinite(Number(state.minimum)))) return 'Enter a finite minimum correlation, such as -0.2.'
+  if (state.minimum && Number(state.minimum) === 0 && /[1-9]/.test(state.minimum.split(/e/i)[0]!)) return 'Minimum correlation is too close to zero to represent.'
+  return null
+}
+
+export function eligibleGeneticCorrelations(rows: readonly GeneticCorrelation[], phenotypes: readonly Phenotype[]): GeneticCorrelation[] {
+  const ids = new Set(phenotypes.map(({ name }) => name))
+  return rows.filter(({ otherPhenotype }) => ids.has(otherPhenotype))
+}
+
+export function correlationPhenotypeLabel(id: string, phenotypes: readonly Phenotype[]): string {
+  return findPhenotype(phenotypes, id)?.description.trim() || id
+}
+
+export function filterGeneticCorrelations(rows: readonly GeneticCorrelation[], state: CorrelationTableState): GeneticCorrelation[] {
+  const error = correlationFilterError(state)
+  if (error) throw new RangeError(error)
+  return rows.filter((row) => (!state.phenotypes.length || state.phenotypes.includes(row.otherPhenotype))
+    && (!state.pValue || row.pValue <= Number(state.pValue)) && (!state.minimum || row.correlation >= Number(state.minimum)))
+}
+
+export function sortGeneticCorrelations(rows: readonly GeneticCorrelation[], state: CorrelationTableState, phenotypes: readonly Phenotype[]): GeneticCorrelation[] {
+  const labels = new Map(phenotypes.map(({ name, description }) => [name, description.trim() || name]))
+  return rows.slice().sort((a, b) => {
+    const comparison = state.sort === 'otherPhenotype' ? (labels.get(a.otherPhenotype) ?? a.otherPhenotype).localeCompare(labels.get(b.otherPhenotype) ?? b.otherPhenotype)
+      : a[state.sort] - b[state.sort]
+    return (state.order === 'desc' ? -comparison : comparison) || a.otherPhenotype.localeCompare(b.otherPhenotype)
+      || a.project.localeCompare(b.project) || a.ancestry.localeCompare(b.ancestry)
+  })
+}
+
+export function geneticCorrelationsCsv(rows: readonly GeneticCorrelation[]): string {
+  return encodeCsv(['phenotype', 'other_phenotype', 'ancestry', 'project', 'pValue', 'rg', 'stdErr'],
+    rows.map((row) => [row.phenotype, row.otherPhenotype, row.ancestry, row.project, row.pValue, row.correlation, row.standardError]))
 }
 
 export type PathwaySort = 'pathwayName' | 'pValue' | 'beta' | 'standardError'

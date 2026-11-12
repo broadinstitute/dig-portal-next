@@ -1,4 +1,4 @@
-import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, PathwayAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
+import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, GeneticCorrelation, PathwayAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -300,6 +300,16 @@ function supportKey(value: string): string {
   return value
 }
 
+export function decodeGeneticCorrelation(value: unknown): GeneticCorrelation {
+  const row = supportRecord(value)
+  const pValue = supportNumber(row.pValue), correlation = supportNumber(row.rg), standardError = supportNumber(row.stdErr)
+  if (pValue < 0 || pValue > 1 || standardError < 0) throw new BioIndexResponseError('Invalid genetic-correlation statistics.')
+  return {
+    phenotype: supportString(row.phenotype), otherPhenotype: supportString(row.other_phenotype),
+    ancestry: supportString(row.ancestry), project: supportString(row.project), pValue, correlation, standardError,
+  }
+}
+
 export function decodePathwayAssociation(value: unknown): PathwayAssociation {
   const row = supportRecord(value)
   const pValue = supportNumber(row.pValue), beta = supportNumber(row.beta), standardError = supportNumber(row.stdErr)
@@ -493,6 +503,15 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
       return queryAll('pigean-joined-gene', keys, (value) => {
         const row = decodePigeanGeneSetEvidence(value)
         if (row.phenotype !== phenotype || row.gene !== gene || row.sigma !== model.sigma || row.geneSetCollection !== model.geneSetCollection) throw new BioIndexResponseError('Gene-set evidence does not match the requested gene and model.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
+    },
+
+    async geneticCorrelations(phenotype: string, ancestry = '', requestOptions: BioIndexQueryOptions = {}) {
+      const keys = [supportKey(phenotype), ...(ancestry ? [supportKey(ancestry)] : [])]
+      return queryAll('genetic-correlation', keys.join(','), (value) => {
+        const row = decodeGeneticCorrelation(value)
+        if (row.phenotype !== phenotype || (ancestry && row.ancestry !== ancestry)) throw new BioIndexResponseError('Genetic correlation does not match the requested phenotype and ancestry.')
         return row
       }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
     },

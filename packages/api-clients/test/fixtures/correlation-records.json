@@ -1,0 +1,80 @@
+{
+  "cad": [
+    {
+      "ancestry": "Mixed",
+      "other_phenotype": "HeartAttack",
+      "pValue": 5e-324,
+      "phenotype": "CAD",
+      "project": "portal",
+      "rg": 0.9850899467368218,
+      "stdErr": 0.02093420071859935
+    },
+    {
+      "ancestry": "Mixed",
+      "other_phenotype": "MI",
+      "pValue": 5e-324,
+      "phenotype": "CAD",
+      "project": "portal",
+      "rg": 0.9824327099021094,
+      "stdErr": 0.007692656141608489
+    },
+    {
+      "ancestry": "Mixed",
+      "other_phenotype": "mvAging",
+      "pValue": 5e-324,
+      "phenotype": "CAD",
+      "project": "portal",
+      "rg": -0.6979,
+      "stdErr": 0.0181
+    },
+    {
+      "ancestry": "Mixed",
+      "other_phenotype": "AnyCVD_add",
+      "pValue": 0.000004579,
+      "phenotype": "CAD",
+      "project": "portal",
+      "rg": 1.0867,
+      "stdErr": 0.2371
+    }
+  ],
+  "european": [
+    {
+      "ancestry": "EU",
+      "other_phenotype": "HeartAttack",
+      "pValue": 5e-324,
+      "phenotype": "CAD",
+      "project": "portal",
+      "rg": 0.986,
+      "stdErr": 0.0212
+    },
+    {
+      "ancestry": "EU",
+      "other_phenotype": "MI",
+      "pValue": 5e-324,
+      "phenotype": "CAD",
+      "project": "portal",
+      "rg": 0.9821,
+      "stdErr": 0.0077
+    }
+  ],
+  "t2d": [
+    {
+      "ancestry": "Mixed",
+      "other_phenotype": "BS",
+      "pValue": 5e-324,
+      "phenotype": "T2D",
+      "project": "portal",
+      "rg": 0.9818,
+      "stdErr": 0.0159
+    },
+    {
+      "ancestry": "Mixed",
+      "other_phenotype": "T2D_nopreg",
+      "pValue": 2.8403e-15,
+      "phenotype": "T2D",
+      "project": "portal",
+      "rg": -1.0777,
+      "stdErr": 0.1365
+    }
+  ]
+}

@@ -59,6 +59,17 @@ export interface VariantAssociation {
   readonly source: string
 }
 
+export interface GeneticCorrelation {
+  readonly phenotype: string
+  readonly otherPhenotype: string
+  readonly ancestry: string
+  readonly project: string
+  readonly pValue: number
+  /** Estimated rg can exceed [-1, 1]; preserve the source value. */
+  readonly correlation: number
+  readonly standardError: number
+}
+
 export interface PathwayAssociation {
   readonly phenotype: string
   readonly ancestry: string

@@ -1,8 +1,60 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readCorrelationTableState, correlationTableQuery, correlationFilterError, eligibleGeneticCorrelations, correlationPhenotypeLabel, filterGeneticCorrelations, sortGeneticCorrelations, geneticCorrelationsCsv } from '../src/index.ts'
 import { readPathwayTableState, pathwayTableQuery, sortPathwayAssociations, pathwayAssociationsCsv } from '../src/index.ts'
 import { readCs2ctState, cs2ctQuery, cs2ctFilterError, cs2ctEligibleRows, cs2ctLabel, cs2ctTissueKey, missingCs2ctTissue, filterCs2ctRows, sortCs2ctRows, cs2ctCsv, cs2ctVariantRegion } from '../src/index.ts'
 import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages, readAssociationTableState, associationTableQuery, associationPValueError, associationMetaSummary, filterVariantAssociations, sortVariantAssociations, associationPage, formatAssociationPValue, formatAssociationEffect, variantAssociationsCsv, readGeneSupportState, geneSupportQuery, geneSupportRows, geneSupportMinimumError, filterGeneSupportRows, sortGeneSupportRows, geneticSupportCsv, geneSupportPlotPoints, geneSupportEvidence } from '../src/index.ts'
+
+const corrRow = (patch = {}) => ({ phenotype: 'CAD', otherPhenotype: 'MI', ancestry: 'Mixed', project: 'portal', pValue: 1e-8, correlation: 0.25, standardError: 0.05, ...patch })
+const corrPhenotypes = [{ name: 'MI', description: 'Myocardial infarction' }, { name: 'BMI', description: 'Body mass index' }]
+
+test('roundtrips correlation multi-select, numeric filters and table query state', () => {
+  const state = readCorrelationTableState({ corrPhenotype: ['MI', null, ' BMI ', 'MI'], corrP: '1e-8', corrMin: '-.2', corrSort: 'correlation', corrOrder: 'desc', corrPage: '3' })
+  assert.deepEqual(state.phenotypes, ['MI', 'BMI'])
+  assert.deepEqual(readCorrelationTableState(correlationTableQuery(state)), state)
+  assert.deepEqual(correlationTableQuery(readCorrelationTableState({ corrSort: 'invalid', corrPage: '-2' })), {})
+  assert.equal(readCorrelationTableState({ corrPage: '9007199254740992' }).page, 1)
+})
+
+test('validates correlation filters without bounding estimated rg or silently rounding underflow', () => {
+  for (const corrP of ['-1', '1.1', 'word', '1e-999']) assert.ok(correlationFilterError(readCorrelationTableState({ corrP })))
+  for (const corrMin of ['NaN', 'Infinity', '0x10', '1e-999']) assert.ok(correlationFilterError(readCorrelationTableState({ corrMin })))
+  for (const corrMin of ['-2', '1.37', '-1e-3', '0']) assert.equal(correlationFilterError(readCorrelationTableState({ corrP: '5e-324', corrMin })), null)
+})
+
+test('scopes correlations to exact metadata IDs and applies inclusive phenotype/p-value/rg filters', () => {
+  const rows = Object.freeze([Object.freeze(corrRow()), Object.freeze(corrRow({ otherPhenotype: 'BMI', correlation: -0.5 })), Object.freeze(corrRow({ otherPhenotype: 'MI_extra', correlation: 2 }))])
+  const eligible = eligibleGeneticCorrelations(rows, corrPhenotypes)
+  assert.equal(eligible.length, 2)
+  assert.equal(correlationPhenotypeLabel('MI', corrPhenotypes), 'Myocardial infarction')
+  assert.equal(correlationPhenotypeLabel('unknown', corrPhenotypes), 'unknown')
+  assert.deepEqual(filterGeneticCorrelations(eligible, readCorrelationTableState({ corrPhenotype: ['MI', 'BMI'], corrP: '1e-8', corrMin: '-0.5' })), eligible)
+  assert.deepEqual(filterGeneticCorrelations(eligible, readCorrelationTableState({ corrPhenotype: 'MI' })), [rows[0]])
+  assert.equal(filterGeneticCorrelations(eligible, readCorrelationTableState({ corrPhenotype: 'M' })).length, 0)
+  assert.equal(filterGeneticCorrelations([corrRow({ correlation: 0, pValue: 0 })], readCorrelationTableState({ corrMin: '0', corrP: '0' })).length, 1)
+  assert.throws(() => filterGeneticCorrelations(eligible, readCorrelationTableState({ corrP: 'bad' })), RangeError)
+  assert.equal(rows.length, 3)
+})
+
+test('sorts correlations by numeric estimates or displayed phenotype label without mutating input', () => {
+  const rows = Object.freeze([corrRow({ otherPhenotype: 'MI', correlation: -2, pValue: 2e-20, standardError: 10 }), corrRow({ otherPhenotype: 'BMI', correlation: 10, pValue: 1e-20, standardError: 2 })])
+  assert.equal(sortGeneticCorrelations(rows, readCorrelationTableState({}), corrPhenotypes)[0].otherPhenotype, 'BMI')
+  assert.equal(sortGeneticCorrelations(rows, readCorrelationTableState({ corrSort: 'correlation' }), corrPhenotypes)[0].correlation, -2)
+  assert.equal(sortGeneticCorrelations(rows, readCorrelationTableState({ corrSort: 'standardError' }), corrPhenotypes)[0].standardError, 2)
+  assert.equal(sortGeneticCorrelations(rows, readCorrelationTableState({ corrSort: 'otherPhenotype' }), [{ name: 'MI', description: 'A' }, { name: 'BMI', description: 'Z' }])[0].otherPhenotype, 'MI')
+  assert.equal(sortGeneticCorrelations(rows, readCorrelationTableState({ corrSort: 'correlation', corrOrder: 'desc' }), corrPhenotypes)[0].correlation, 10)
+  assert.equal(rows[0].otherPhenotype, 'MI')
+})
+
+test('exports every filtered correlation with raw IDs, signed estimates, tiny p-values and CSV protection', () => {
+  const rows = Array.from({ length: 23 }, (_, index) => corrRow({ otherPhenotype: `TRAIT${index}`, correlation: -1.0777, pValue: Number.MIN_VALUE }))
+  assert.equal(associationPage(rows, 3, 10).records.length, 3)
+  const csv = geneticCorrelationsCsv(rows)
+  assert.equal(csv.trim().split('\r\n').length, 24)
+  assert.match(csv, /"5e-324","-1\.0777"/)
+  const escaped = geneticCorrelationsCsv([corrRow({ otherPhenotype: '=A,"B"\nC' })])
+  assert.match(escaped, /"'=A,""B""\nC"/)
+})
 
 const pathwayRow = (patch = {}) => ({ phenotype: 'CAD', ancestry: 'Mixed', pathwayName: 'PATH_A', pValue: 1e-8, beta: 0.25, standardError: 0.05, betaStandardError: null, geneCount: null, ...patch })
 

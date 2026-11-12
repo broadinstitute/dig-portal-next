@@ -15,10 +15,10 @@ end of a working session with the next actionable steps and verified results.
 
 ## Current state
 
-- **Resume checkpoint:** this session started from clean commit `3bd1fab`,
-  which includes CS2CT, genetic support and the dev Content isolation fix.
-  Top pathways is now implemented in the uncommitted worktree; genetic
-  correlations is the next section. The existing port-3000 server's catalog
+- **Resume checkpoint:** this slice started from clean commit `d6310e3`,
+  which includes pathways and all earlier features. Genetic correlations is
+  now implemented in the uncommitted worktree; globally enriched annotations
+  is the next section. The existing port-3000 server's catalog
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
   isolated `portalDev` command was verified on 2026-11-11. No new dependencies
   or architecture decisions were introduced.
@@ -32,9 +32,9 @@ end of a working session with the next actionable steps and verified results.
   server needs one restart through `pnpm portal dev cmd --host 127.0.0.1 --no-fork`
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
-- The working branch is `feature/phenotype-poc`; HEAD at resume is `3bd1fab`.
-  CS2CT and all earlier slices are committed. Pathways, its tests/fixtures and
-  these status updates are uncommitted.
+- The working branch is `feature/phenotype-poc`; HEAD at resume is `d6310e3`.
+  Pathways and all earlier slices are committed. Genetic correlations, its
+  tests/fixtures and these status updates are uncommitted.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
   do not reconstruct or undo that review without new evidence.
@@ -44,7 +44,8 @@ end of a working session with the next actionable steps and verified results.
   `mouse_msigdb`) per D-21.
 - [The CMD phenotype page](../../apps/cmd/app/pages/phenotype.vue) supports
   `/phenotype?phenotype=CAD` and optional `ancestry`, phenotype selection,
-  plots, single-variant associations, genetic-support tabs, CS2CT, pathways, a phenotype/ancestry-filtered dataset table, and
+  plots, single-variant associations, genetic-support tabs, CS2CT, pathways,
+  genetic correlations, a phenotype/ancestry-filtered dataset table, and
   [effector-gene lists](../../apps/cmd/app/components/EffectorGeneLists.vue).
   A static `phenotype.html` redirect preserves legacy queries and fragments.
 - [The association section](../../apps/cmd/app/components/PhenotypeAssociations.vue)
@@ -57,6 +58,23 @@ end of a working session with the next actionable steps and verified results.
   `assocSort`, `assocOrder`, `assocPage`, and `assocPageSize` query parameters.
   Updates preserve other parameters and the hash. Parent phenotype/ancestry
   selectors reset table state. Region/gene/variant links open the legacy portal.
+- [Genetic correlations](../../apps/cmd/app/components/PhenotypeGeneticCorrelations.vue)
+  uses typed `geneticCorrelations` queries with verified `phenotype[,ancestry]`
+  keys and a 1,000-record cap. Existing page phenotype metadata is passed as a
+  prop, not fetched again. The legacy table's exact portal-membership filter
+  is retained, and excluded counts are shown separately from completeness.
+  Controls select multiple correlated phenotypes, maximum p-value and minimum
+  rg; four headers sort, with ascending p-value and ten-row pages as defaults.
+  The [table](../../apps/cmd/app/components/GeneticCorrelationsTable.vue) uses
+  friendly labels, unrounded CSV values, and internal phenotype links retaining
+  the selected ancestry while clearing section state. Name sorting uses the
+  displayed label. The URL keys are `corrPhenotype` (repeated values), `corrP`,
+  `corrMin`, `corrSort`, `corrOrder`, `corrPage`; local edits preserve all other
+  section query values/hash and do not refetch. Numeric filters reject invalid
+  input and nonzero underflow. Estimated rg is signed and can exceed [-1, 1];
+  do not clamp or exponentiate it. Export includes all eligible filtered/sorted
+  rows, not just the current page. The legacy session/disease workflow is not
+  added to this phenotype-only shell.
 - [Top pathways](../../apps/cmd/app/components/PhenotypePathways.vue) uses typed
   `pathwayAssociations` queries with verified `phenotype[,ancestry]` keys and
   the legacy 100-record cap. The [presentation table](../../apps/cmd/app/components/PathwayAssociationsTable.vue)
@@ -137,10 +155,27 @@ end of a working session with the next actionable steps and verified results.
   handles route state, ancestry options, exact trait matching, and dataset
   filtering, plus association filtering/sorting/pagination/formatting/CSV and
   provenance lineage, genetic-support joins/plots/CSV, CS2CT controls/CSV and
-  pathway sorting/paging/CSV. The imported Nuxt Content catalog contains one CAD list and eight
+  pathway sorting/paging/CSV and genetic-correlation controls/CSV. The imported Nuxt Content catalog contains one CAD list and eight
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Genetic-correlation checkpoint (2026-11-12): typed live clients decoded CAD
+651/complete, CAD/EU 603/complete, T2D 715/complete and CAD/GME 0/complete,
+all unrestricted. Exact membership in the 936-phenotype CMD metadata leaves
+398, 364, 456 and zero eligible rows respectively. The recorded sources and
+estimated rg ranges are in [correlation-sources.md](../../packages/api-clients/test/fixtures/correlation-sources.md).
+Validation, shared/CMD typechecks, static build, 85 shared tests (19 CLI,
+30 API-client, 2 content, 34 phenotype-feature) and all seven CMD tests passed.
+`git diff --check` passed. CLI fixture tests used the same command-scoped
+signing override described below. The unchanged layer-shadow test passed;
+its historical intermittent failure remains undiagnosed.
+The ignored `.data/verify-correlations.mjs` offline check passed labels,
+encoded internal links retaining ancestry, signed rg outside [-1, 1], multi-
+select/numeric/sort/page URL events preserving other sections/hash without a
+metadata refetch, explicit metadata exclusions, coverage/loading/error/empty/
+invalid-filter states, clamped pagination, a full 23-row CSV handler from a
+three-row page and escaped service text. Browser behavior remains unverified.
 
 Pathway checkpoint (2026-11-12): live typed queries returned CAD 100/partial,
 CAD/EU 100/partial, T2D 100/partial and CAD/GME 0/complete, all unrestricted.
@@ -232,7 +267,8 @@ Source references are legacy `src/components/C2ctTable.vue`,
 the local legacy checkout. The initial Q positivity assumption failed on CAD
 record 243; its unchanged negative-score record is now a regression fixture.
 
-The dataset, effector, provenance, association, genetic-support, CS2CT and pathway sections have **not** been verified in
+The dataset, effector, provenance, association, genetic-support, CS2CT, pathway
+and genetic-correlation sections have **not** been verified in
 a real browser. The architect explicitly authorized localhost HTTP and
 browser checks during this session; that authorization persists. An initial
 forked-server probe timed out; after a restart using `--no-fork`, the
@@ -269,21 +305,24 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    has since been restarted into the isolated environment, verified this session.
 1. Review the worktree without discarding changes. When browser access is
    working, use the existing server or start the CLI command above and check
-   datasets, effector lists, provenance, associations, genetic support, CS2CT and pathways for CAD, T2D, ancestry, empty,
+   datasets, effector lists, provenance, associations, genetic support, CS2CT,
+   pathways and genetic correlations for CAD, T2D, ancestry, empty,
    and error states. Also check modal focus/closing, graph/table/JSON switching,
    keyboard navigation, graph mount/unmount, association URL back/forward,
    filtering/sorting/paging, all four support tabs and gene-set details, partial-result
    warnings, SVG performance, CS2CT annotation/multi-select controls, missing-name
-   rows, negative scores, Sifter links, pathway sorting/back-forward and real CSV downloads. The successful local HTTP
+   rows, negative scores, Sifter links, pathway/correlation sorting/back-forward,
+   correlation multi-select/thresholds/internal links and real CSV downloads. The successful local HTTP
    check used a session-only `NUXT_PUBLIC_BIOINDEX_URL=https://bioindex-ext.hugeamp.org`.
    Stop temporary servers started by the agent afterward; leave user-owned servers
    running. Verify CORS and Cloudflare on the hosted preview
    separately; localhost success does not establish hosted behavior.
-2. Continue the [section plan](./phenotype-poc.md#section-plan) with **genetic
-   correlations**, then globally enriched annotations and
+2. Continue the [section plan](./phenotype-poc.md#section-plan) with **globally
+   enriched annotations**, then
    the deferred CFDE link card. Inspect the legacy template/store/components
    and verify live index discovery, key ordering, score meanings and sample
-   records before adding decoders. CS2CT and pathways are implemented; do not repeat them or
+   records before adding decoders. CS2CT, pathways and genetic correlations
+   are implemented; do not repeat them or
    copy the old ancestry-first key ordering. Reuse the typed clients and
    headless logic already available; keep regional plots/factors deferred.
 3. Keep the agreed deferral rule: a significant rewrite used on only this

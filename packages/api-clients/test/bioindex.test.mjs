@@ -1,8 +1,57 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { decodeGeneticCorrelation } from '../src/index.ts'
 import { decodePathwayAssociation } from '../src/index.ts'
 import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation, decodePigeanGeneSupport, decodeHugeGeneScore, decodeFalconGeneProbability, decodePigeanGeneSetEvidence, decodeCs2ctRecord } from '../src/index.ts'
+
+test('decodes recorded genetic correlations, preserving estimates outside [-1, 1] and tiny p-values', () => {
+  const raw = fixture('correlation-records')
+  const cad = raw.cad.map(decodeGeneticCorrelation)
+  assert.equal(cad[0].pValue, Number.MIN_VALUE)
+  assert.equal(cad[0].otherPhenotype, 'HeartAttack')
+  assert.equal(cad[0].standardError, raw.cad[0].stdErr)
+  assert.ok(cad.some((r) => r.correlation > 1))
+  assert.ok(cad.some((r) => r.correlation < 0))
+  assert.ok(raw.t2d.map(decodeGeneticCorrelation).some((r) => r.correlation < -1))
+  assert.equal(decodeGeneticCorrelation({ ...raw.cad[0], rg: 0, pValue: 0, stdErr: 0 }).correlation, 0)
+  for (const patch of [{ rg: NaN }, { rg: Infinity }, { pValue: -1 }, { pValue: 1.1 }, { stdErr: -1 }, { stdErr: null }, { other_phenotype: '' }, { project: null }]) {
+    assert.throws(() => decodeGeneticCorrelation({ ...raw.cad[0], ...patch }), BioIndexResponseError)
+  }
+})
+
+test('queries genetic correlations with phenotype-first ancestry keys, explicit caps and cancellation', async () => {
+  const raw = fixture('correlation-records')
+  const envelope = (data) => ({ data, count: data.length, continuation: null, restricted: 0, progress: { bytes_read: 100, bytes_total: 100 } })
+  const mock = mockFetch(envelope(raw.cad), envelope(raw.european), envelope(raw.t2d))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const result = await client.geneticCorrelations('CAD', '', { signal })
+  await client.geneticCorrelations('CAD', 'EU', { signal, limit: 20 })
+  await client.geneticCorrelations('T2D', '', { signal })
+  assert.deepEqual(mock.calls.map(({ url }) => url), [
+    '/bioindex/api/bio/query/genetic-correlation?q=CAD&limit=1000',
+    '/bioindex/api/bio/query/genetic-correlation?q=CAD%2CEU&limit=20',
+    '/bioindex/api/bio/query/genetic-correlation?q=T2D&limit=1000',
+  ])
+  assert.equal(result.completeness, 'complete')
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  await assert.rejects(client.geneticCorrelations('CAD,EU'), TypeError)
+  await assert.rejects(client.geneticCorrelations('CAD', 'EU,CAD'), TypeError)
+})
+
+test('rejects genetic correlations for another trait or ancestry, including continuation pages', async () => {
+  const row = fixture('correlation-records').european[0]
+  const envelope = (data) => ({ data, count: data.length, continuation: null, restricted: 0, progress: { bytes_read: 100, bytes_total: 100 } })
+  for (const patch of [{ phenotype: 'T2D' }, { ancestry: 'EA' }]) {
+    const wrong = envelope([{ ...row, ...patch }])
+    const mock = mockFetch(wrong, { ...envelope([row]), continuation: 'next', progress: { bytes_read: 50, bytes_total: 100 } }, wrong)
+    const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+    await assert.rejects(client.geneticCorrelations('CAD', 'EU'), BioIndexResponseError)
+    await assert.rejects(client.geneticCorrelations('CAD', 'EU'), BioIndexResponseError)
+    assert.match(mock.calls[2].url, /\/cont\?token=next/)
+  }
+})
 
 test('decodes recorded pathway statistics without mixing distinct standard errors or transforming beta', () => {
   const records = fixture('pathway-records')
