@@ -17,9 +17,10 @@ end of a working session with the next actionable steps and verified results.
 
 - **Resume checkpoint:** global enrichment is committed in `a22cc34`, and the
   deferred CFDE card in `fc932c6`. All planned visible phenotype sections have
-  implementations or legacy links. This foundation checkpoint extends D-05
-  validation to external Vue block `src` attributes and corrects stale gate notes.
-  The planned phenotype sections now have an implementation or legacy link.
+  implementations or legacy links. `6ae87c1` extends D-05 validation to external
+  Vue block `src` attributes and corrects stale gate notes. A bounded audit of
+  the historical layer-shadow failure followed: eight isolated runs passed,
+  with no reporter or test change and no claim that the intermittency is fixed.
   The next tasks are foundation-gap verification and browser/hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
@@ -38,9 +39,9 @@ end of a working session with the next actionable steps and verified results.
   server needs one restart through `pnpm portal dev cmd --host 127.0.0.1 --no-fork`
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
-- The working branch is `feature/phenotype-poc`; the baseline for this task
-  was clean `fc932c6`. The D-05 external-block check, its tests and these notes belong
-  to the same task commit. Check current HEAD/status rather than interpreting
+- The working branch is `feature/phenotype-poc`; the implementation baseline
+  for this audit was clean `6ae87c1`. All code tasks are committed; this audit
+  checkpoint changes documentation only. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
@@ -184,6 +185,19 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Layer-shadow audit (2026-11-12): eight consecutive isolated runs of the unchanged
+`apps/cmd/test/layer-shadowing.test.mjs` passed. No concurrent suite reproduction
+was attempted in this bounded audit, and the historical cause is still unknown.
+The installed Nuxt 4.5.2 source regenerates imports on `modules:done` and after
+non-import templates, calls `imports:extend` with scanned entries, and then
+updates import templates. The reporter snapshots that hook before reporting
+at `app:templatesGenerated`; this inspection alone does not establish a race.
+On recurrence, retain complete child stdout/stderr, hook invocation order and
+`useFeature` scan entries plus resolved layer roots. The ignored diagnostic aid
+`apps/cmd/.data/diagnose-layer.mjs` logs scan entries, but timing instrumentation
+can affect reproduction. Do not relax the assertion or mark D-30 stable merely
+from these green runs. No runtime/dependency changes were made in this audit.
 
 D-05 checkpoint (2026-11-12): the new external-Vue regression failed against
 the previous checker (zero of six application references detected), then passed
