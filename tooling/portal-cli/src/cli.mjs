@@ -194,8 +194,9 @@ export async function main(args, root = path.resolve(path.dirname(fileURLToPath(
     const errors = validateWorkspace(root);
     if (errors.length === 0) {
       try {
-        errors.push(...await validateDependencyDirection(root, discoverPackages(root)));
-        errors.push(...validateLayerSources(root));
+        const packages = discoverPackages(root);
+        errors.push(...await validateDependencyDirection(root, packages));
+        errors.push(...validateLayerSources(root, packages));
       } catch (error) {
         console.error(`error: Workspace analysis failed: ${error.message}`);
         return 1;

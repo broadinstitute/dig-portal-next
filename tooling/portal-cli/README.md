@@ -83,6 +83,21 @@ computed/cross-file config and dependency-tree layers still require review.
 Current CI installs dependencies (including Nuxt prepare hooks) **before** running
 validation; this is a workspace policy gate, not a pre-install network safeguard.
 
+Static layer references also check D-31a's dependency-graph requirement against
+discovered workspace packages. A relative/absolute path or file URL into another
+workspace must become a package-name reference with a declared `workspace:`
+dependency. A named workspace layer (including package subpaths) must have that
+declaration in the consuming config's owning workspace manifest. Dependencies,
+dev dependencies, optional dependencies and peer dependencies are supported;
+regressions verify all four through pnpm's actual affected-package graph. Local
+layers inside the same workspace remain allowed. Nested configs use their
+containing workspace's manifest.
+
+This check does not infer edges through executable configs, aliases, symlinks,
+external packages or local targets outside discovered workspaces. It checks
+`extends`; other cross-workspace source/config references still need review for
+graph visibility. It does not implement artifact/variant selection.
+
 ## CMD development output
 
 Use `pnpm portal dev cmd` to start CMD. Its app script selects the `portalDev`

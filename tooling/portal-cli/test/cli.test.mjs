@@ -884,7 +884,7 @@ test("rejects explicit Git providers, transports and repository URLs without dis
         'https://fixture-user:fixture-secret@example.test/team/layer.git?token=fixture-token#main',
     ];
     writeFixture(root, 'apps/cmd/nuxt.config.ts', `export default defineNuxtConfig({ extends: ${JSON.stringify(sources)} });`);
-    const errors = validateLayerSources(root);
+    const errors = validateLayerSources(root, discoverPackages(root));
     assert.equal(errors.length, sources.length, errors.join('\n'));
     for (const error of errors) assert.match(error, /nuxt\.config\.ts config extends.*D-30/);
     assert.doesNotMatch(errors.join('\n'), /fixture-user|fixture-secret|fixture-token/);
@@ -900,7 +900,7 @@ test("inspects local layer configs, static environments, tuple sources and Commo
     writeFixture(root, 'packages/shared/nuxt.config.cjs', 'module.exports = { extends: ["sourcehut:~team/layer"] };');
     // A local/auto-discovered nested layer need not have its own package manifest.
     writeFixture(root, 'apps/cmd/layers/theme/nuxt.config.mjs', 'export default { extends: "github:example/theme" };');
-    const errors = validateLayerSources(root);
+    const errors = validateLayerSources(root, discoverPackages(root));
     assert.equal(errors.length, 7, errors.join('\n'));
     assert.match(errors.join('\n'), /\$env\.qa\.extends/);
     assert.match(errors.join('\n'), /\$production\.extends/);
@@ -920,7 +920,7 @@ test("allows local and package layers and excludes unrelated text and generated 
     ].join('\n'));
     for (const directory of ['.data', '.nuxt-dev', '.output', 'node_modules', 'dist', 'coverage', '.cache', '.git']) writeFixture(root, `apps/cmd/${directory}/nuxt.config.ts`, 'export default { extends: "github:example/ignored" };');
     writeFixture(root, 'apps/cmd/settings.ts', 'export const label = { extends: "github:example/text-only" };');
-    assert.deepEqual(validateLayerSources(root), []);
+    assert.deepEqual(validateLayerSources(root, discoverPackages(root)), []);
     assert.equal(await main(['validate'], root), 0);
 });
 
@@ -928,7 +928,62 @@ test("reports malformed application configs instead of silently skipping layer v
     const root = createWorkspace(t);
     createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
     writeFixture(root, 'apps/cmd/nuxt.config.ts', 'export default defineNuxtConfig({ extends: [');
-    assert.match(validateLayerSources(root).join('\n'), /nuxt\.config\.ts cannot be parsed for static layer-source validation/);
+    assert.match(validateLayerSources(root, discoverPackages(root)).join('\n'), /nuxt\.config\.ts cannot be parsed for static layer-source validation/);
+});
+
+test("workspace validation rejects graph-invisible cross-workspace layer paths", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', 'export default { extends: ["../../layers/platform"] };');
+    assert.equal(await main(['validate'], root), 1);
+});
+
+test("rejects cross-workspace layer paths even when the package dependency is declared", (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd', dependencies: { '@dig-portal/platform': 'workspace:*' } });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    const platform = path.join(root, 'layers', 'platform');
+    const sources = ['../../layers/platform', '../../layers/platform/nuxt.config.ts', platform, pathToFileURL(platform).href];
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', `export default { extends: ${JSON.stringify(sources)} };`);
+    writeFixture(root, 'apps/cmd/layers/theme/nuxt.config.ts', 'export default { $env: { qa: { extends: [["../../../../layers/platform", {}]] } } };');
+    const errors = validateLayerSources(root, discoverPackages(root));
+    assert.equal(errors.length, 5, errors.join('\n'));
+    for (const error of errors) assert.match(error, /@dig-portal\/platform by package name.*D-31a/);
+    assert.match(errors.join('\n'), /\$env\.qa\.extends/);
+});
+
+test("requires workspace protocol declarations for named workspace layers, allowing local and external layers", (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    createPackage(root, 'layers', 'theme', { name: '@dig-portal/theme' });
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', 'export default { extends: ["@dig-portal/platform", "@dig-portal/theme/subpath", "./layers/local", "external-layer"] };');
+    writeFixture(root, 'apps/cmd/layers/local/nuxt.config.ts', 'export default { extends: "../../local-base" };');
+    writeFixture(root, 'layers/platform/nuxt.config.ts', 'export default { extends: "./local-base" };');
+    let errors = validateLayerSources(root, discoverPackages(root));
+    assert.equal(errors.length, 2, errors.join('\n'));
+    assert.match(errors.join('\n'), /must declare @dig-portal\/platform as a workspace dependency.*D-31a/);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd', dependencies: { '@dig-portal/platform': '^1.0.0', '@dig-portal/theme': 'workspace:*' } });
+    errors = validateLayerSources(root, discoverPackages(root));
+    assert.equal(errors.length, 1, errors.join('\n'));
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd', dependencies: { '@dig-portal/platform': 'workspace:*', '@dig-portal/theme': 'workspace:*' } });
+    assert.deepEqual(validateLayerSources(root, discoverPackages(root)), []);
+});
+
+test("validated workspace layer dependencies select consuming portals through pnpm's real graph", async (t) => {
+    for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+        const { root, manifests } = createAffectedFixture(t);
+        createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd', [section]: { '@dig-portal/shared': 'workspace:*' } });
+        writeFixture(root, 'apps/cmd/nuxt.config.ts', 'export default { extends: ["@dig-portal/shared"] };');
+        const baseline = commitFixture(root, `configure layer in ${section}`);
+        assert.equal(await main(['validate'], root), 0, section);
+        writeManifest(manifests, 'cmd', baseline);
+        writeManifest(manifests, 'msk', baseline);
+        writeFixture(root, 'packages/shared/index.js', 'export const value = 2;');
+        commitFixture(root, 'change layer source');
+        assert.deepEqual(affectedPortals(root, discoverPackages(root), manifests), ['cmd'], section);
+    }
 });
 
 test("allows shared dependencies and applications importing shared code", async (t) => {

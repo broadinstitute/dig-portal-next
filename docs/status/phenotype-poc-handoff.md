@@ -23,9 +23,11 @@ end of a working session with the next actionable steps and verified results.
   base portal-definition schema to the existing build/content guard (`badbf69`).
   `790139e` checks selected static dependency strings in shared Nuxt configs.
   `fee609f` adds alias targets, component directories and configured import
-  directories/preset sources. This checkpoint adds a bounded D-30 check for
+  directories/preset sources. `2935028` adds a bounded D-30 check for
   remote Git layer sources in static Nuxt `extends` values across apps/packages/
-  layers, without executing configs or fetching layers. Local and package
+  layers, without executing configs or fetching layers. This checkpoint adds
+  D-31a checks for graph-visible references to discovered workspace layers:
+  use package names with declared workspace dependencies. Same-workspace local
   layers remain allowed; see the verification scope below.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
@@ -53,8 +55,8 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this task was clean `fee609f`. Remote Git layer enforcement, its tests and
-  this handoff are committed as one task. Check current HEAD/status rather than interpreting
+  for this task was clean `2935028`. Workspace layer graph checks, their tests
+  and this handoff are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
@@ -198,6 +200,22 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Workspace layer graph checkpoint (2026-11-12): static `extends` references into
+another discovered workspace now require its package name and a declared
+`workspace:` dependency in the consumer's manifest (D-31a). Relative/absolute
+paths and file URLs crossing that boundary fail, even if the dependency is
+already declared; package-name subpaths are supported. Nested local layer
+configs use the containing workspace's manifest. Same-workspace local layers
+remain allowed. The baseline path-reference regression passed incorrectly;
+four new tests pass, including actual pnpm graph/affected selection through
+dependency, dev, optional and peer declarations. A changed layer selects the
+consuming portal. Workspace validation and all 121 shared tests pass (47 CLI,
+33 API-client, 2 content, 39 phenotype-feature). No dependencies or portal
+runtime changed; preceding CMD typecheck/build/11 tests remain the app
+verification. This does not infer graph edges through aliases, symlinks,
+unregistered targets, executable/cross-file configs, external packages or other
+source/config fields. Variant/artifact affected selection remains pending.
 
 Remote Git layer checkpoint (2026-11-12): `portal validate` now inspects static
 `extends` sources in app/package/layer Nuxt configs, including nested local
@@ -518,6 +536,9 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    now checked, as are selected static Nuxt config fields. Static remote Git
    `extends` sources also have a bounded D-30 check; custom providers and dynamic
    config still require review, and validation runs after install/prepare in CI.
+   Static cross-workspace layer references have D-31a package-name/dependency
+   checks for discovered workspaces; other cross-workspace imports and config
+   fields still need dependency-graph review. Variant/artifact selection remains.
    Next bounded tasks
    can address remaining config fields or portal-ID
    branching. CMD's base definition is validated; future portal/variant and
