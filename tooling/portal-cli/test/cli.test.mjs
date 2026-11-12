@@ -760,6 +760,62 @@ test("fails dependency validation on malformed script source instead of skipping
     assert.match(errors.join('\n'), /broken\.ts.*cannot be parsed for glob dependency validation/);
 });
 
+test("rejects application strings in shared Nuxt configuration dependency fields", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    writeFixture(root, 'layers/platform/nuxt.config.ts', [
+        'export default defineNuxtConfig({',
+        '  extends: [["../../apps/cmd", { meta: { text: "option" } }]],',
+        '  modules: ["@dig-portal/cmd/module", ["~/module", { arbitrary: "option" }]],',
+        '  plugins: [{ src: "#shared/plugin", mode: "client" }],',
+        '  css: ["../../apps/cmd/private.css"],',
+        '});',
+    ].join('\n'));
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 5, errors.join('\n'));
+    assert.match(errors.join('\n'), /nuxt\.config\.ts.*config extends.*apps\/cmd/);
+    assert.match(errors.join('\n'), /config modules.*@dig-portal\/cmd\/module/);
+    assert.match(errors.join('\n'), /config plugins.*#shared\/plugin/);
+    assert.equal(await main(['validate'], root), 1);
+});
+
+test("checks static Nuxt environment and override blocks", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    writeFixture(root, 'layers/platform/nuxt.config.mjs', 'export default { $env: { portalDev: { extends: "../../apps/cmd", modules: ["@dig-portal/cmd/module"] } }, $development: { plugins: ["~/plugin"] }, overrides: { css: ["#shared/style.css"] } };');
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 4, errors.join('\n'));
+    assert.match(errors.join('\n'), /\$env\.portalDev\.extends/);
+    assert.match(errors.join('\n'), /\$development\.plugins/);
+});
+
+test("checks same-file constant configs, arrays, spreads and CommonJS exports without executing them", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'packages', 'shared', { name: '@dig-portal/shared' });
+    writeFixture(root, 'packages/shared/nuxt.config.ts', 'const styles = ["~/app.css"] as const; const base = { css: styles }; const modules = [["@dig-portal/cmd/module", {}]] as const; const config = { ...base, modules: [...modules] }; export default defineNuxtConfig(config);');
+    writeFixture(root, 'packages/shared/nuxt.config.cjs', 'throw new Error("must not execute"); module.exports = { plugins: ["../../apps/cmd/plugin"] };');
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 3, errors.join('\n'));
+});
+
+test("allows shared Nuxt references and module identifiers without treating option text as dependencies", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    writeFixture(root, 'layers/platform/plugin.ts', 'export default function plugin() {}');
+    writeFixture(root, 'layers/platform/nuxt.config.ts', [
+        'import plugin from "./plugin";',
+        'const modules = [[plugin, { modules: ["@dig-portal/cmd/not-a-dependency"] }]];',
+        'const overridden = { css: ["~/unused.css"] };',
+        'export default defineNuxtConfig({ ...overridden, extends: [["@dig-portal/other-layer", { text: "@dig-portal/cmd/not-a-dependency" }]], modules, plugins: [{ src: "./plugin" }], css: ["./style.css"], runtimeConfig: { public: { css: "~/label-only" } } });',
+    ].join('\n'));
+    writeFixture(root, 'layers/platform/settings.ts', 'export const text = { modules: ["@dig-portal/cmd/label-only"] };');
+    assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
+});
+
 test("allows shared dependencies and applications importing shared code", async (t) => {
     const root = createWorkspace(t);
     createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });

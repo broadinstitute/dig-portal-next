@@ -5,6 +5,7 @@ import { cruise } from 'dependency-cruiser';
 import { parse } from '@vue/compiler-sfc';
 import { cssImports } from './css-imports.mjs';
 import { applicationGlobMatches, scriptGlobs } from './glob-imports.mjs';
+import { nuxtConfigReferences } from './nuxt-config-references.mjs';
 
 const dependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const generatedDirectories = new Set(['node_modules', '.git', '.output', '.data', '.cache', 'dist', 'coverage']);
@@ -123,6 +124,11 @@ export async function validateDependencyDirection(root, packages) {
       }
       if (scriptExtensions.has(path.extname(filename).toLowerCase())) {
         validateGlobs(contents, source);
+        if (/^nuxt\.config\.[cm]?[jt]s$/i.test(path.basename(filename))) {
+          for (const { field, target } of nuxtConfigReferences(contents, source)) {
+            if (sourceReferencesApplication(root, source, target, appNames, appsPath)) errors.push(`${source} has an application or app-relative config ${field}: ${target}.`);
+          }
+        }
         continue;
       }
       const { descriptor, errors: parseErrors } = parse(contents, { filename });

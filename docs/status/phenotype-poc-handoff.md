@@ -20,7 +20,9 @@ end of a working session with the next actionable steps and verified results.
   implementations or legacy links. `6ae87c1` extends D-05 validation to external
   Vue block `src` attributes and corrects stale gate notes. CSS checks are in
   `f3fecdb`, static glob checks in `d12fa46`. This checkpoint adds CMD's app-owned
-  base portal-definition schema to the existing build/content guard.
+  base portal-definition schema to the existing build/content guard (`badbf69`).
+  This checkpoint additionally checks selected static dependency strings in
+  shared Nuxt configuration files.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
@@ -47,7 +49,7 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this task was clean `d12fa46`. CMD schema enforcement, its tests and this handoff
+  for this task was clean `badbf69`. Nuxt config enforcement, its tests and this handoff
   are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
@@ -192,6 +194,22 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Nuxt-config checkpoint (2026-11-12): the D-05 check now reads selected static
+`extends`, `modules`, `plugins` and `css` fields in shared `nuxt.config` files.
+It handles literals/`defineNuxtConfig`/CommonJS, same-file const bindings,
+arrays/tuples/spreads, plugin `src` objects, `$env`, standard environment and
+override blocks without executing source. Final static object-property values
+are used, so overwritten config and arbitrary module option/data text are not
+reported as imports. Baseline tests missed all bad config references; the four
+new cases pass. Real workspace validation and all 109 shared tests pass (35 CLI,
+33 API-client, 2 content, 39 phenotype-feature). Focused config cases passed
+again after checking the pinned Nuxt 4.5.2 schema and adding layer-option tuples.
+No dependencies or portal runtime code changed. The previous CMD schema static
+build, typechecks and 11 CMD tests remain the latest app checks. This is partial
+config inspection: other fields (such as aliases/components/import directories),
+cross-file data, computed/function-produced config and Nuxt's complete path/
+merge behavior still need review. No architecture decision changed.
 
 CMD base-definition checkpoint (2026-11-12): `apps/cmd/portal.schema.ts` is
 owned by CMD and its inferred `PortalDefinition` is type-only imported and
@@ -412,8 +430,9 @@ The latest inventory (2026-11-12) returned no browsers and `The browser
 access host is unavailable`. No native-browser retry or preview server was
 started by the agent this session. Preserve the user's isolated port-3000 server.
 
-The latest static build predates the tooling-only boundary commits and is not
-a release artifact. The renderer is dynamically imported, but the build warns about a
+The latest static build passed for the CMD base-schema checkpoint, before that
+task's commit; it is not a release artifact. Later tooling-only checks do not
+regenerate portal output. The renderer is dynamically imported, but the build warns about a
 client chunk exceeding 500 kB. Browser transfer and graph performance remain
 unmeasured, particularly for T2D/Mixed (315 activities).
 
@@ -455,7 +474,8 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Keep regional plots, factors and CFDE deferred. Do not duplicate completed
    data sections or copy the old CS2CT ancestry-first query order.
    External Vue blocks, static CSS imports and supported literal glob macros are
-   now checked. Next bounded tasks can address config references or portal-ID
+   now checked, as are selected static Nuxt config fields. Next bounded tasks
+   can address remaining config fields or portal-ID
    branching. CMD's base definition is validated; future portal/variant and
    general content schemas remain. Keep residual auto-import
    and portal-ID branching limitations explicit. Shared tests/typechecks and

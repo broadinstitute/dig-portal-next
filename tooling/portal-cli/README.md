@@ -38,7 +38,17 @@ does not follow symlinks. Malformed scripts, nonliteral glob inputs/options,
 app-root patterns and configured aliases report errors requiring review rather
 than silently passing. Custom alias resolution is not simulated.
 
-This is partial static enforcement. Nuxt auto-imports, config strings,
+Shared `nuxt.config` files also have selected static dependency fields checked:
+`extends` and `modules` (including tuples), `plugins` (including `src` objects),
+and `css`. Literal defaults, `defineNuxtConfig`, CommonJS exports, same-file
+constants/spreads, `$env`, standard environment blocks and `overrides` are read
+without executing config. Static object overrides use the final property value;
+module option text and unrelated data are not treated as dependency fields.
+Module implementations referenced through identifiers still have their normal
+script imports checked. This does not simulate Nuxt's full merge/resolver behavior.
+
+This is partial static enforcement. Nuxt auto-imports, other config fields,
+computed/function-produced config, cross-file config-data resolution,
 Sass/Less and other non-CSS style languages, directives other than `@import`,
 computed references outside these macros, other script languages, symlinked
 sources, dependency-tree references and portal-ID branching
