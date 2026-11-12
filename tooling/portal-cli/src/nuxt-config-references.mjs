@@ -57,6 +57,31 @@ export function nuxtConfigReferences(contents, filename) {
     node = resolve(node);
     if (node && ts.isStringLiteralLike(node)) references.push({ field, target: node.text });
   }
+  function componentDirs(node, field, ancestors = new Set()) {
+    node = resolve(node);
+    if (!node || ancestors.has(node)) return;
+    const next = new Set([...ancestors, node]);
+    if (ts.isArrayLiteralExpression(node)) {
+      for (const entry of node.elements) componentDirs(ts.isSpreadElement(entry) ? entry.expression : entry, field, next);
+    } else if (ts.isObjectLiteralExpression(node)) {
+      const entries = properties(node);
+      if (entries.has('dirs')) componentDirs(entries.get('dirs'), `${field}.dirs`, next);
+      else add(entries.get('path'), `${field}.path`);
+    } else add(node, field);
+  }
+  function importSources(node, field, ancestors = new Set()) {
+    list(node, (entry) => {
+      if (!entry || ancestors.has(entry)) return;
+      const next = new Set([...ancestors, entry]);
+      const entries = properties(entry);
+      add(entries.get('from'), `${field}.from`);
+      add(entries.get('typeFrom'), `${field}.typeFrom`);
+      list(entries.get('imports'), (item) => {
+        if (item && ts.isArrayLiteralExpression(item)) add(item.elements[2], `${field}.imports.from`);
+        else importSources(item, `${field}.imports`, next);
+      });
+    });
+  }
   function inspect(node, prefix = '', ancestors = new Set()) {
     node = resolve(node);
     if (!node || ancestors.has(node)) return;
@@ -72,6 +97,15 @@ export function nuxtConfigReferences(contents, filename) {
         if (entry && ts.isObjectLiteralExpression(entry)) add(properties(entry).get('src'), field);
         else add(entry, field);
       });
+      else if (name === 'alias') {
+        for (const [alias, target] of properties(value)) add(target, `${field}.${alias}`);
+      } else if (name === 'components') componentDirs(value, field);
+      else if (name === 'imports') {
+        const entries = properties(value);
+        if (resolve(entries.get('scan'))?.kind !== ts.SyntaxKind.FalseKeyword) list(entries.get('dirs'), (entry) => add(entry, `${field}.dirs`));
+        importSources(entries.get('imports'), `${field}.imports`);
+        importSources(entries.get('presets'), `${field}.presets`);
+      }
       else if (name === '$env') {
         for (const [environment, config] of properties(value)) inspect(config, `${field}.${environment}`, next);
       } else if (['$development', '$production', '$test', 'overrides'].includes(name)) inspect(value, field, next);

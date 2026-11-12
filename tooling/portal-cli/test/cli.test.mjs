@@ -816,6 +816,50 @@ test("allows shared Nuxt references and module identifiers without treating opti
     assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
 });
 
+test("rejects app aliases, component scan directories and configured import sources in Nuxt layers", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    writeFixture(root, 'layers/platform/nuxt.config.ts', [
+        'export default defineNuxtConfig({',
+        '  alias: { "#private": "../../apps/cmd/private" },',
+        '  components: { dirs: ["../../apps/cmd/components", { path: "~/components", prefix: "Shared" }] },',
+        '  imports: { dirs: ["../../apps/cmd/composables"], imports: [{ name: "useApp", from: "@dig-portal/cmd/imports", typeFrom: "#shared/types" }],',
+        '    presets: [{ from: "#shared/preset", imports: [{ from: "~/nested", imports: ["useNested"] }, ["useOther", "useAlias", "@dig-portal/cmd/override"]] }] },',
+        '});',
+    ].join('\n'));
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 9, errors.join('\n'));
+    assert.match(errors.join('\n'), /config alias\.#private/);
+    assert.match(errors.join('\n'), /config components\.dirs\.path/);
+    assert.match(errors.join('\n'), /config imports\.presets\.imports.*@dig-portal\/cmd\/override/);
+    assert.equal(await main(['validate'], root), 1);
+});
+
+test("checks component array and single-directory forms plus same-file import constants in environments", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'packages', 'shared', { name: '@dig-portal/shared' });
+    writeFixture(root, 'packages/shared/nuxt.config.ts', 'const scan = ["~/imports"]; const preset = { from: "@dig-portal/cmd/preset", imports: ["useX"] }; export default defineNuxtConfig({ components: [[{ path: "../../apps/cmd/components" }]], $env: { qa: { components: { path: "#shared/components" }, imports: { dirs: [...scan], presets: [preset] } } } });');
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 4, errors.join('\n'));
+    assert.match(errors.join('\n'), /\$env\.qa\.imports\.presets\.from/);
+});
+
+test("allows shared scan paths and preset sources without treating labels or names as dependencies", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    writeFixture(root, 'layers/platform/nuxt.config.ts', [
+        'const aliases = { "@dig-portal/cmd/compatibility-label": "../../packages/shared" };',
+        'export default defineNuxtConfig({ alias: aliases, components: { dirs: [{ path: "./app/components", prefix: "~/label-only" }] },',
+        'imports: { dirs: ["./app/composables"], imports: [{ from: "./safe", typeFrom: "./safe/types", name: "@dig-portal/cmd/name-only" }], presets: [{ from: "vue", imports: [["@dig-portal/cmd/name-only", "~/alias-only", "./safe"]] }] },',
+        'modules: [[() => {}, { components: ["~/option-text-only"], imports: { dirs: ["~/option-text-only"] } }]], runtimeConfig: { public: { alias: { text: "~/label-only" } } } });',
+    ].join('\n'));
+    writeFixture(root, 'layers/platform/nuxt.config.cjs', 'module.exports = { components: false, imports: { scan: false, dirs: ["~/disabled-scan"] } };');
+    assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
+});
+
 test("allows shared dependencies and applications importing shared code", async (t) => {
     const root = createWorkspace(t);
     createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });

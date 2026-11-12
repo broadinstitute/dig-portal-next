@@ -21,8 +21,9 @@ end of a working session with the next actionable steps and verified results.
   Vue block `src` attributes and corrects stale gate notes. CSS checks are in
   `f3fecdb`, static glob checks in `d12fa46`. This checkpoint adds CMD's app-owned
   base portal-definition schema to the existing build/content guard (`badbf69`).
-  This checkpoint additionally checks selected static dependency strings in
-  shared Nuxt configuration files.
+  `790139e` checks selected static dependency strings in shared Nuxt configs.
+  This checkpoint adds alias targets, component directories and configured
+  import directories/preset sources to those checks.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
@@ -49,7 +50,7 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this task was clean `badbf69`. Nuxt config enforcement, its tests and this handoff
+  for this task was clean `790139e`. Alias/scan enforcement, its tests and this handoff
   are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
@@ -195,6 +196,22 @@ end of a working session with the next actionable steps and verified results.
 
 ## Verification at this snapshot
 
+Nuxt scan/alias checkpoint (2026-11-12): shared configs now check alias values,
+component directory strings/arrays/options and explicit import/preset module
+sources (`from`, `typeFrom`, nested presets and tuple source overrides).
+Same-file constants, spreads and environment blocks reuse the static inspector.
+Literal `imports.scan: false` skips its directories; names, prefixes, alias keys
+and arbitrary module/runtime option text are not dependency paths. The baseline
+regressions missed every bad reference; new focused tests pass. Config shapes
+were verified against installed Nuxt 4.5.2 and Unimport 6.5.0 types/source.
+Workspace validation and 112 shared tests pass (38 CLI, 33 API-client, 2 content,
+39 phenotype-feature); the three focused cases passed again with type-source
+coverage. No dependencies or app runtime changed. Previous CMD typecheck/build/
+11 tests still apply. Broad scan pattern/alias resolution, implicit and generated
+auto-imports, executable and cross-file config data and other config fields
+remain review gaps. Browser inventory again reported an unavailable host; no
+native-browser retry or server change was made.
+
 Nuxt-config checkpoint (2026-11-12): the D-05 check now reads selected static
 `extends`, `modules`, `plugins` and `css` fields in shared `nuxt.config` files.
 It handles literals/`defineNuxtConfig`/CommonJS, same-file const bindings,
@@ -207,7 +224,8 @@ new cases pass. Real workspace validation and all 109 shared tests pass (35 CLI,
 again after checking the pinned Nuxt 4.5.2 schema and adding layer-option tuples.
 No dependencies or portal runtime code changed. The previous CMD schema static
 build, typechecks and 11 CMD tests remain the latest app checks. This is partial
-config inspection: other fields (such as aliases/components/import directories),
+config inspection: aliases/components/import directories were pending here and
+are covered by the newer checkpoint above; other fields,
 cross-file data, computed/function-produced config and Nuxt's complete path/
 merge behavior still need review. No architecture decision changed.
 
