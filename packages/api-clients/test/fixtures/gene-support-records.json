@@ -1,0 +1,196 @@
+{
+  "joined": [
+    {
+      "beta": 1.33,
+      "beta_uncorrected": 2.12,
+      "combined": 11.0,
+      "gene": "LDLR",
+      "gene_set": "mp_increased_circulating_triglyceride_level",
+      "gene_set_size": "mouse_msigdb",
+      "log_bf": 5.2,
+      "phenotype": "CAD",
+      "prior": 5.79,
+      "sigma": 2,
+      "source": "mouse_2024",
+      "trait_group": "portal"
+    },
+    {
+      "beta": 1.07,
+      "beta_uncorrected": 1.7,
+      "combined": 11.0,
+      "gene": "LDLR",
+      "gene_set": "mp_decreased_circulating_cholesterol_level",
+      "gene_set_size": "mouse_msigdb",
+      "log_bf": 5.2,
+      "phenotype": "CAD",
+      "prior": 5.79,
+      "sigma": 2,
+      "source": "mouse_2024",
+      "trait_group": "portal"
+    }
+  ],
+  "pigean": [
+    {
+      "combined": 11.4,
+      "factor": "Factor1",
+      "gene": "APOE",
+      "gene_set_size": "mouse_msigdb",
+      "huge_score": 2.34,
+      "label": "Insulin and triglyceride increase",
+      "log_bf": 5.13,
+      "n": 1153,
+      "phenotype": "CAD",
+      "prior": 6.25,
+      "sigma": 2,
+      "trait_group": "portal"
+    },
+    {
+      "combined": 11.0,
+      "factor": "Factor1",
+      "gene": "LDLR",
+      "gene_set_size": "mouse_msigdb",
+      "huge_score": 2.5,
+      "label": "Insulin and triglyceride increase",
+      "log_bf": 5.2,
+      "n": 782,
+      "phenotype": "CAD",
+      "prior": 5.79,
+      "sigma": 2,
+      "trait_group": "portal"
+    },
+    {
+      "combined": 0.709,
+      "gene": "PNPLA5",
+      "gene_set_size": "mouse_msigdb",
+      "huge_score": 0.213,
+      "log_bf": 0.242,
+      "n": 42,
+      "phenotype": "CAD",
+      "prior": 0.466,
+      "sigma": 2,
+      "trait_group": "portal"
+    }
+  ],
+  "t2d": [
+    {
+      "combined": 10.9,
+      "factor": "Factor1",
+      "gene": "TCF7L2",
+      "gene_set_size": "mouse_msigdb",
+      "huge_score": 3.6,
+      "label": "Decreased Glucose and Body Weight",
+      "log_bf": 5.2,
+      "n": 649,
+      "phenotype": "T2D",
+      "prior": 5.73,
+      "sigma": 2,
+      "trait_group": "portal"
+    },
+    {
+      "combined": 10.4,
+      "factor": "Factor1",
+      "gene": "IRS1",
+      "gene_set_size": "mouse_msigdb",
+      "huge_score": 5.2,
+      "label": "Decreased Glucose and Body Weight",
+      "log_bf": 5.2,
+      "n": 592,
+      "phenotype": "T2D",
+      "prior": 5.23,
+      "sigma": 2,
+      "trait_group": "portal"
+    }
+  ],
+  "falcon": [
+    {
+      "GENE": "APOB",
+      "PIP": 1.0,
+      "GENE_R": 0.9991,
+      "GENE_STAT": true,
+      "P_WINDOW": 6.777,
+      "P_DECAY": 4.478,
+      "WINDOW_R": 0.9991,
+      "WINDOW_STAT": true,
+      "P_BETA": 0.005596311497935279,
+      "P_SE": 0.00029999812501757794,
+      "P_P": 1.1610848978880774E-77,
+      "NEG_LOG_P": 76.93513602372714,
+      "ABS_POS": 2021224301,
+      "TRAIT": "CAD"
+    },
+    {
+      "GENE": "CDH13",
+      "PIP": 1.0,
+      "GENE_R": 0.9991,
+      "GENE_STAT": true,
+      "P_WINDOW": 6.777,
+      "P_DECAY": 4.478,
+      "WINDOW_R": 0.9991,
+      "WINDOW_STAT": true,
+      "P_BETA": 0.004708077899998931,
+      "P_SE": 0.000227728995228385,
+      "P_P": 5.933795995887215E-95,
+      "NEG_LOG_P": 94.22666738882192,
+      "ABS_POS": 16082660399,
+      "TRAIT": "CAD"
+    },
+    {
+      "GENE": "SOGA3",
+      "PIP": 0.1356,
+      "GENE_R": 1.6211,
+      "GENE_STAT": false,
+      "P_WINDOW": 6.777,
+      "P_DECAY": 4.478,
+      "WINDOW_R": 0.9991,
+      "WINDOW_STAT": true,
+      "P_BETA": 0.00038363443720117917,
+      "P_SE": 0.002545131863718978,
+      "P_P": 0.8801866268041348,
+      "NEG_LOG_P": 0.05542523421580363,
+      "ABS_POS": 6127759551,
+      "TRAIT": "CAD"
+    }
+  ],
+  "huge": [
+    {
+      "gene": "LDLR",
+      "phenotype": "CAD",
+      "chromosome": "19",
+      "start": 11200094,
+      "end": 11244496,
+      "bf_common": 20,
+      "bf_rare": 348.0,
+      "huge": 6960.0
+    },
+    {
+      "gene": "TRIM5",
+      "phenotype": "CAD",
+      "chromosome": "11",
+      "start": 5684425,
+      "end": 5959849,
+      "bf_common": 350,
+      "bf_rare": 1.0,
+      "huge": 350.0
+    },
+    {
+      "gene": "ENSG00000269896",
+      "phenotype": "CAD",
+      "chromosome": "1",
+      "start": 2283083,
+      "end": 2283296,
+      "bf_common": 3,
+      "bf_rare": 1.0,
+      "huge": 3.0
+    },
+    {
+      "gene": "ENSG00000269896",
+      "phenotype": "CAD",
+      "chromosome": "1",
+      "start": 2283083,
+      "end": 2283296,
+      "bf_common": 3,
+      "bf_rare": 1.0,
+      "huge": 3.0
+    }
+  ]
+}

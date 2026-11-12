@@ -7,6 +7,11 @@ const buildId = execFileSync("git", ["rev-parse", "--verify", "HEAD"], {
 
 export default defineNuxtConfig({
     buildId,
+    // The portal dev script selects portalDev. Keep its live Content artifacts
+    // outside .nuxt, which prepare/typecheck may overwrite or clear.
+    $env: {
+        portalDev: { buildDir: ".nuxt-dev" },
+    },
     compatibilityDate: "2026-11-10",
     extends: ["@dig-portal/platform"],
     modules: ["@nuxt/content", "@nuxt/ui"],

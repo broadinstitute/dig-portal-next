@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages, readAssociationTableState, associationTableQuery, associationPValueError, associationMetaSummary, filterVariantAssociations, sortVariantAssociations, associationPage, formatAssociationPValue, formatAssociationEffect, variantAssociationsCsv } from '../src/index.ts'
+import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages, readAssociationTableState, associationTableQuery, associationPValueError, associationMetaSummary, filterVariantAssociations, sortVariantAssociations, associationPage, formatAssociationPValue, formatAssociationEffect, variantAssociationsCsv, readGeneSupportState, geneSupportQuery, geneSupportRows, geneSupportMinimumError, filterGeneSupportRows, sortGeneSupportRows, geneticSupportCsv, geneSupportPlotPoints, geneSupportEvidence } from '../src/index.ts'
 
 test('reads legacy phenotype and ancestry query parameters', () => {
   assert.deepEqual(readPhenotypeRouteState({ phenotype: ' CAD ', ancestry: 'EU' }), { phenotype: 'CAD', ancestry: 'EU' })
@@ -188,4 +188,74 @@ test('formats tiny p-values and reports odds ratios for binary traits while reta
   assert.equal(formatAssociationEffect(0, false), '0')
   assert.equal(formatAssociationEffect(null, true), 'Not available')
   assert.equal(formatAssociationEffect(1000, true), 'Too large to display')
+})
+
+const support = (patch = {}) => ({ phenotype: 'CAD', gene: 'GENE', combined: 11.4, direct: 5.13, indirect: 6.25, factor: 'Factor1', factorLabel: 'Factor label', sigma: 2, geneSetCollection: 'mouse_msigdb', ...patch })
+const huge = (patch = {}) => ({ phenotype: 'CAD', gene: 'GENE', chromosome: '1', start: 10, end: 20, score: 6960, common: 20, rare: 348, ...patch })
+
+test('round-trips gene-support URLs and validates tab-specific sorting and score thresholds', () => {
+  const state = readGeneSupportState({ supportTab: 'huge', supportGene: 'GENE', supportMin: '3', supportSort: 'common', supportOrder: 'asc', supportPage: '2' })
+  assert.deepEqual(readGeneSupportState(geneSupportQuery(state)), state)
+  assert.deepEqual(geneSupportQuery(readGeneSupportState({})), {})
+  assert.equal(readGeneSupportState({ supportTab: 'huge', supportSort: 'combined', supportPage: '-1' }).sort, 'huge')
+  assert.equal(readGeneSupportState({ supportTab: 'unknown', supportPage: 'Infinity' }).page, 1)
+  assert.equal(readGeneSupportState({ supportTab: 'direct-indirect', supportSort: 'pip' }).sort, 'combined')
+  assert.equal(geneSupportMinimumError('-2', 'combined'), null)
+  assert.ok(geneSupportMinimumError('-2', 'huge'))
+  for (const value of ['bad', 'Infinity', '1e-999']) assert.ok(geneSupportMinimumError(value, 'combined'))
+})
+
+test('joins exact gene IDs, retains every HuGE locus, and distinguishes zero from missing values', () => {
+  const p = [support(), support({ gene: 'gene' }), support({ gene: 'NO_MATCH' })]
+  const h = [huge(), huge({ score: 350, chromosome: '2' }), huge({ gene: 'HUGE_ONLY', score: 0 })]
+  const f = [{ phenotype: 'CAD', gene: 'GENE', pip: 0 }, { phenotype: 'CAD', gene: 'GENE', pip: 0.8 }]
+  const rows = geneSupportRows(p, h, f, 'comparison')
+  assert.equal(rows[0].huge, 6960)
+  assert.equal(rows[0].hugeRecords, 2)
+  assert.equal(rows[0].combined, 11.4, 'preserves the reported score rather than recomputing a sum')
+  assert.equal(rows[0].pip, 0.8)
+  assert.equal(rows[1].huge, null, 'does not case-fold gene IDs')
+  assert.equal(rows[2].pip, null)
+  const hugeRows = geneSupportRows(p, h, f, 'huge')
+  assert.equal(hugeRows.length, 3)
+  assert.equal(hugeRows[2].huge, 0)
+  assert.equal(geneSupportRows(p, [], [{ phenotype: 'CAD', gene: 'GENE', pip: 0 }], 'combined')[0].pip, 0)
+  assert.deepEqual(h.map(({ score }) => score), [6960, 350, 0])
+  const mismatched = geneSupportRows([support()], [huge({ phenotype: 'T2D' })], [{ phenotype: 'T2D', gene: 'GENE', pip: 1 }], 'combined')[0]
+  assert.equal(mismatched.huge, null, 'does not join evidence across traits')
+  assert.equal(mismatched.pip, null)
+})
+
+test('filters and sorts support rows without dropping missing matches or mutating source arrays', () => {
+  const rows = geneSupportRows([support(), support({ gene: 'SECOND', combined: -2 })], [huge()], [], 'combined')
+  const state = readGeneSupportState({ supportGene: 'GENE', supportMin: '3' })
+  assert.equal(filterGeneSupportRows(rows, state).length, 1)
+  assert.throws(() => filterGeneSupportRows(rows, { ...state, minimum: 'bad' }), RangeError)
+  assert.equal(filterGeneSupportRows(rows, { ...state, gene: 'GENE2' }).length, 0)
+  for (const order of ['asc', 'desc']) assert.equal(sortGeneSupportRows(rows, { ...state, sort: 'huge', order }).at(-1).huge, null)
+  assert.equal(sortGeneSupportRows(rows, { ...state, sort: 'combined', order: 'asc' })[0].gene, 'SECOND')
+  assert.equal(rows[0].gene, 'GENE')
+})
+
+test('plots raw support and natural-log HuGE explicitly, omitting only unplottable values', () => {
+  const rows = geneSupportRows([support()], [huge({ score: Math.E })], [], 'comparison')
+  const points = geneSupportPlotPoints(rows, 'comparison')
+  assert.equal(points.find(({ series }) => series === 'ln(HuGE)').y, 1)
+  assert.equal(points.find(({ series }) => series === 'Combined').y, 11.4)
+  assert.deepEqual(geneSupportPlotPoints(rows, 'direct-indirect')[0], { gene: 'GENE', x: 5.13, y: 6.25, series: 'Gene' })
+  assert.equal(geneSupportPlotPoints(geneSupportRows([], [huge({ score: 0 })], [], 'huge'), 'huge').length, 0)
+  assert.equal(geneSupportEvidence(3), 'Strongly suggestive')
+  assert.equal(geneSupportEvidence(3.01), 'Very strong')
+  assert.equal(geneSupportEvidence(null), 'Not available')
+})
+
+test('exports every filtered gene-support row with raw scores, model metadata and safe CSV text', () => {
+  const p = Array.from({ length: 23 }, (_, index) => support({ gene: index === 0 ? '=FORMULA' : `GENE${index}`, combined: 1.23456789 }))
+  const rows = geneSupportRows(p, [], [], 'combined')
+  assert.equal(associationPage(rows, 3, 10).records.length, 3)
+  const csv = geneticSupportCsv(rows)
+  assert.equal(csv.trim().split('\r\n').length, 24)
+  assert.ok(csv.includes('"\'=FORMULA"'))
+  assert.ok(csv.includes('"1.23456789"'))
+  assert.ok(csv.includes('"2","mouse_msigdb"'))
 })

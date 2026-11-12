@@ -13,3 +13,16 @@ The caller must retain the previous manifest if a build fails or is skipped. A p
 Selection uses pnpm's workspace dependency graph and compares each portal with its own manifest. Changes outside application, package, and layer workspaces rebuild every portal. Documentation means the root `docs/`, each workspace package's `docs/`, and conventional root or package-root `README.md`, `AGENTS.md`, `CHANGELOG.md`, and `CONTRIBUTING.md` files. Nuxt Content and public files are never treated as documentation; other files are conservatively considered build inputs. Documentation directories must not be used as application content sources.
 
 This command currently selects application directories only; CMD variants and artifact packaging are not implemented yet.
+
+## CMD development output
+
+Use `pnpm portal dev cmd` to start CMD. Its app script selects the `portalDev`
+Nuxt environment and writes generated development files to `apps/cmd/.nuxt-dev`.
+`prepare` and `typecheck` use `.nuxt`; they generate preparation-only Nuxt Content
+manifests without collection dumps. Sharing that directory with a running dev
+server can make the catalog endpoint return an empty response. The separate,
+ignored dev directory keeps validation from overwriting or clearing live Content
+artifacts. Production generation retains Nuxt's normal build directory behavior.
+
+Restart servers started before this isolation change once so they pick up the
+updated `dev` script. A page reload clears any failed client-side Content load.

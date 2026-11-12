@@ -59,6 +59,46 @@ export interface VariantAssociation {
   readonly source: string
 }
 
+export interface PigeanModel {
+  readonly sigma: number
+  readonly geneSetCollection: string
+}
+
+export interface PigeanGeneSupport extends PigeanModel {
+  readonly phenotype: string
+  readonly gene: string
+  readonly combined: number
+  readonly direct: number
+  readonly indirect: number
+  readonly factor: string | null
+  readonly factorLabel: string | null
+}
+
+export interface HugeGeneScore {
+  readonly phenotype: string
+  readonly gene: string
+  readonly chromosome: string
+  readonly start: number
+  readonly end: number
+  readonly score: number
+  readonly common: number | null
+  readonly rare: number | null
+}
+
+export interface FalconGeneProbability {
+  readonly phenotype: string
+  readonly gene: string
+  readonly pip: number
+}
+
+export interface PigeanGeneSetEvidence extends PigeanModel {
+  readonly phenotype: string
+  readonly gene: string
+  readonly geneSet: string
+  readonly jointEffect: number
+  readonly source: string
+}
+
 export interface ProvenanceAncestry {
   readonly id: string
   readonly ancestryId: string

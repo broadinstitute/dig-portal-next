@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation } from '../src/index.ts'
+import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation, decodePigeanGeneSupport, decodeHugeGeneScore, decodeFalconGeneProbability, decodePigeanGeneSetEvidence } from '../src/index.ts'
 
 function fixture(name) {
   return JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'))
@@ -24,6 +24,59 @@ function decodeAssociation(value) {
   }
   return { variantId: value.varId, phenotype: value.phenotype }
 }
+
+test('decodes recorded PIGEAN, HuGE, FALCON and gene-set evidence without confusing score units', () => {
+  const raw = fixture('gene-support-records')
+  const p = raw.pigean.map(decodePigeanGeneSupport)
+  assert.equal(p[0].combined, 11.4)
+  assert.equal(p[0].direct, 5.13)
+  assert.equal(p[0].indirect, 6.25)
+  assert.equal(p.at(-1).factor, null)
+  assert.equal(decodeHugeGeneScore(raw.huge[0]).score, 6960)
+  assert.notEqual(raw.pigean[1].huge_score, 6960, 'PIGEAN huge_score is not the HuGE feed')
+  assert.equal(decodeFalconGeneProbability({ ...raw.falcon[0], PIP: 0 }).pip, 0)
+  assert.equal(decodePigeanGeneSetEvidence(raw.joined[0]).jointEffect, 1.33)
+  for (const [decode, value] of [[decodePigeanGeneSupport, { ...raw.pigean[0], combined: NaN }], [decodeHugeGeneScore, { ...raw.huge[0], huge: -1 }], [decodeHugeGeneScore, { ...raw.huge[0], end: -1 }], [decodeFalconGeneProbability, { ...raw.falcon[0], PIP: 1.1 }], [decodeFalconGeneProbability, { ...raw.falcon[0], PIP: '0.5' }], [decodePigeanGeneSetEvidence, { ...raw.joined[0], beta: Infinity }]]) {
+    assert.throws(() => decode(value), BioIndexResponseError)
+  }
+})
+
+test('queries gene-support sources with verified keys, explicit limits and cancellation', async () => {
+  const raw = fixture('gene-support-records')
+  const envelope = (data) => ({ ...fixture('cad-association'), data: [data] })
+  const mock = mockFetch(envelope(raw.pigean[0]), envelope(raw.huge[0]), envelope(raw.falcon[0]), envelope(raw.joined[0]))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const model = { sigma: 2, geneSetCollection: 'mouse_msigdb' }
+  await client.pigeanGeneSupport('CAD', model, { signal })
+  await client.hugeGeneScores('CAD', { signal })
+  await client.falconGeneProbabilities('CAD', { signal })
+  await client.pigeanGeneSets('CAD', 'LDLR', model, { signal, limit: 20 })
+  assert.deepEqual(mock.calls.map(({ url }) => url), [
+    '/bioindex/api/bio/query/pigean-gene-phenotype?q=CAD%2C2%2Cmouse_msigdb&limit=1000',
+    '/bioindex/api/bio/query/huge-phenotype?q=CAD&limit=1000',
+    '/bioindex/api/bio/query/falcon.trait.associated.genes?q=CAD&limit=2000',
+    '/bioindex/api/bio/query/pigean-joined-gene?q=CAD%2CLDLR%2C2%2Cmouse_msigdb&limit=20',
+  ])
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  await assert.rejects(client.pigeanGeneSupport('CAD', { ...model, sigma: 0 }), /sigma/)
+  await assert.rejects(client.pigeanGeneSets('CAD', 'LDLR,OTHER', model), /single genetic-support/)
+})
+
+test('rejects wrong-phenotype, wrong-model and wrong-gene support records through continuation pages', async () => {
+  const raw = fixture('gene-support-records')
+  const envelope = (value) => ({ ...fixture('cad-association'), data: [value] })
+  const first = envelope(raw.pigean[0]); first.continuation = 'next'
+  const mock = mockFetch(first, envelope(raw.t2d[0]), envelope({ ...raw.pigean[0], gene_set_size: 'other' }), envelope({ ...raw.huge[0], phenotype: 'T2D' }), envelope({ ...raw.falcon[0], TRAIT: 'T2D' }), envelope(raw.joined[0]))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const model = { sigma: 2, geneSetCollection: 'mouse_msigdb' }
+  await assert.rejects(client.pigeanGeneSupport('CAD', model), /invalid record/)
+  assert.ok(mock.calls[1].url.includes('/api/bio/cont?token=next'))
+  await assert.rejects(client.pigeanGeneSupport('CAD', model), /invalid record/)
+  await assert.rejects(client.hugeGeneScores('CAD'), /invalid record/)
+  await assert.rejects(client.falconGeneProbabilities('CAD'), /invalid record/)
+  await assert.rejects(client.pigeanGeneSets('CAD', 'APOE', model), /invalid record/)
+})
 
 test('decodes recorded association annotations, absent fields, binary and quantitative effects', () => {
   const records = fixture('association-records')

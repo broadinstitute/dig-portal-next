@@ -1,4 +1,4 @@
-import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation } from '@dig-portal/domain'
+import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability } from '@dig-portal/domain'
 
 export interface PhenotypeRouteState {
   readonly phenotype: string | null
@@ -273,17 +273,166 @@ export function formatAssociationEffect(beta: number | null, dichotomous: boolea
 }
 
 /** Exports unrounded source statistics for all filtered rows, not just the current page. */
-export function variantAssociationsCsv(records: readonly VariantAssociation[]): string {
+function encodeCsv(headers: readonly string[], rows: readonly (readonly (string | number | null)[])[]): string {
   function cell(value: string | number | null): string {
     if (value === null) return ''
     let text = String(value)
     if (typeof value === 'string' && (/^[\t\r\n]/.test(text) || /^[\s]*[=+\-@]/.test(text))) text = `'${text}`
     return `"${text.replaceAll('"', '""')}"`
   }
+  return [headers.map(cell).join(','), ...rows.map((row) => row.map(cell).join(','))].join('\r\n') + '\r\n'
+}
+
+export function variantAssociationsCsv(records: readonly VariantAssociation[]): string {
   const headers = ['variantId', 'phenotype', 'ancestry', 'chromosome', 'position', 'reference', 'alternate', 'rsId', 'consequence', 'nearestGenes', 'pValue', 'beta', 'metaAnalysis', 'dataset', 'source']
-  return [headers.map(cell).join(','), ...records.map((record) => [
+  return encodeCsv(headers, records.map((record) => [
     record.variantId, record.phenotype, record.ancestry, record.chromosome, record.position, record.reference, record.alternate,
     record.rsId, record.consequence, record.nearestGenes.join(';'), record.pValue, record.beta,
     associationMetaKey(record.metaTypes), record.dataset, record.source,
-  ].map(cell).join(','))].join('\r\n') + '\r\n'
+  ]))
+}
+
+export type GeneSupportTab = 'combined' | 'huge' | 'comparison' | 'direct-indirect'
+export type GeneSupportSort = 'gene' | 'combined' | 'direct' | 'indirect' | 'huge' | 'pip' | 'common' | 'rare'
+export interface GeneSupportState {
+  readonly tab: GeneSupportTab
+  readonly gene: string
+  readonly minimum: string
+  readonly sort: GeneSupportSort
+  readonly order: 'asc' | 'desc'
+  readonly page: number
+}
+
+export const geneSupportQueryKeys = ['supportTab', 'supportGene', 'supportMin', 'supportSort', 'supportOrder', 'supportPage'] as const
+
+export function readGeneSupportState(query: Readonly<Record<string, unknown>>): GeneSupportState {
+  const candidate = firstQueryValue(query.supportTab)
+  const tab: GeneSupportTab = candidate === 'huge' || candidate === 'comparison' || candidate === 'direct-indirect' ? candidate : 'combined'
+  const sort = firstQueryValue(query.supportSort)
+  const allowed = tab === 'huge' ? ['gene', 'huge', 'common', 'rare'] : tab === 'comparison' ? ['gene', 'combined', 'huge'] : tab === 'direct-indirect' ? ['gene', 'combined', 'direct', 'indirect'] : ['gene', 'combined', 'direct', 'indirect', 'pip']
+  const page = Number(firstQueryValue(query.supportPage))
+  return {
+    tab, gene: firstQueryValue(query.supportGene) ?? '', minimum: firstQueryValue(query.supportMin) ?? '',
+    sort: sort && allowed.includes(sort) ? sort as GeneSupportSort : tab === 'huge' ? 'huge' : 'combined',
+    order: firstQueryValue(query.supportOrder) === 'asc' ? 'asc' : 'desc',
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+  }
+}
+
+export function geneSupportQuery(state: GeneSupportState): Record<string, string> {
+  return {
+    ...(state.tab !== 'combined' ? { supportTab: state.tab } : {}),
+    ...(state.gene ? { supportGene: state.gene } : {}),
+    ...(state.minimum ? { supportMin: state.minimum } : {}),
+    ...(state.sort !== (state.tab === 'huge' ? 'huge' : 'combined') ? { supportSort: state.sort } : {}),
+    ...(state.order !== 'desc' ? { supportOrder: state.order } : {}),
+    ...(state.page !== 1 ? { supportPage: String(state.page) } : {}),
+  }
+}
+
+export interface GeneSupportRow {
+  readonly key: string
+  readonly gene: string
+  readonly phenotype: string
+  readonly combined: number | null
+  readonly direct: number | null
+  readonly indirect: number | null
+  readonly factor: string | null
+  readonly factorLabel: string | null
+  readonly huge: number | null
+  readonly common: number | null
+  readonly rare: number | null
+  readonly chromosome: string | null
+  readonly start: number | null
+  readonly end: number | null
+  readonly pip: number | null
+  readonly hugeRecords: number
+  readonly sigma: number | null
+  readonly geneSetCollection: string | null
+}
+
+/** Exact-ID joins. Comparisons use the highest returned HuGE score; the HuGE tab retains every locus. */
+export function geneSupportRows(pigean: readonly PigeanGeneSupport[], huge: readonly HugeGeneScore[], falcon: readonly FalconGeneProbability[], tab: GeneSupportTab): GeneSupportRow[] {
+  const identity = (phenotype: string, gene: string) => JSON.stringify([phenotype, gene])
+  const probabilities = new Map<string, number>()
+  for (const row of falcon) {
+    const key = identity(row.phenotype, row.gene)
+    probabilities.set(key, Math.max(probabilities.get(key) ?? 0, row.pip))
+  }
+  const bestHuge = new Map<string, HugeGeneScore>()
+  const counts = new Map<string, number>()
+  for (const row of huge) {
+    const key = identity(row.phenotype, row.gene)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+    if (!bestHuge.has(key) || row.score > bestHuge.get(key)!.score) bestHuge.set(key, row)
+  }
+  function combine(gene: string, phenotype: string, p: PigeanGeneSupport | null, h: HugeGeneScore | null, index: number): GeneSupportRow {
+    return {
+      key: JSON.stringify([gene, p?.factor ?? null, h?.chromosome ?? null, h?.start ?? null, index]), gene, phenotype,
+      combined: p?.combined ?? null, direct: p?.direct ?? null, indirect: p?.indirect ?? null,
+      factor: p?.factor ?? null, factorLabel: p?.factorLabel ?? null,
+      huge: h?.score ?? null, common: h?.common ?? null, rare: h?.rare ?? null,
+      chromosome: h?.chromosome ?? null, start: h?.start ?? null, end: h?.end ?? null,
+      pip: probabilities.get(identity(phenotype, gene)) ?? null, hugeRecords: counts.get(identity(phenotype, gene)) ?? 0,
+      sigma: p?.sigma ?? null, geneSetCollection: p?.geneSetCollection ?? null,
+    }
+  }
+  return tab === 'huge' ? huge.map((h, index) => combine(h.gene, h.phenotype, null, h, index))
+    : pigean.map((p, index) => combine(p.gene, p.phenotype, p, bestHuge.get(identity(p.phenotype, p.gene)) ?? null, index))
+}
+
+export function geneSupportMinimumError(value: string, tab: GeneSupportTab): string | null {
+  const text = value.trim()
+  if (!text) return null
+  const number = Number(text)
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text) || !Number.isFinite(number)) return 'Enter a finite numeric score.'
+  if (tab === 'huge' && number < 0) return 'HuGE scores must be at least 0.'
+  if (number === 0 && /[1-9]/.test(text.split(/e/i)[0]!)) return 'The minimum score is too close to zero to represent.'
+  return null
+}
+
+export function filterGeneSupportRows(rows: readonly GeneSupportRow[], state: GeneSupportState): GeneSupportRow[] {
+  const error = geneSupportMinimumError(state.minimum, state.tab)
+  if (error) throw new RangeError(error)
+  return rows.filter((row) => (!state.gene || row.gene === state.gene) && (!state.minimum.trim()
+    || ((state.tab === 'huge' ? row.huge : row.combined) !== null && (state.tab === 'huge' ? row.huge! : row.combined!) >= Number(state.minimum))))
+}
+
+export function sortGeneSupportRows(rows: readonly GeneSupportRow[], state: GeneSupportState): GeneSupportRow[] {
+  return rows.slice().sort((a, b) => {
+    let comparison: number
+    if (state.sort === 'gene') comparison = a.gene.localeCompare(b.gene)
+    else {
+      const av = a[state.sort], bv = b[state.sort]
+      if (av === null || bv === null) {
+        if (av !== bv) return av === null ? 1 : -1
+        comparison = 0
+      } else comparison = av - bv
+    }
+    return (state.order === 'desc' ? -comparison : comparison) || a.key.localeCompare(b.key)
+  })
+}
+
+export function geneticSupportCsv(rows: readonly GeneSupportRow[]): string {
+  return encodeCsv(['gene', 'phenotype', 'combined', 'direct', 'indirect', 'factor', 'factorLabel', 'HuGE', 'commonBF', 'rareBF', 'chromosome', 'start', 'end', 'FALCON_PIP', 'returnedHuGELoci', 'sigma', 'geneSetCollection'],
+    rows.map((r) => [r.gene, r.phenotype, r.combined, r.direct, r.indirect, r.factor, r.factorLabel, r.huge, r.common, r.rare, r.chromosome, r.start, r.end, r.pip, r.hugeRecords, r.sigma, r.geneSetCollection]))
+}
+
+export interface GeneSupportPoint { readonly gene: string, readonly x: number, readonly y: number, readonly series: string }
+export function geneSupportPlotPoints(rows: readonly GeneSupportRow[], tab: GeneSupportTab): GeneSupportPoint[] {
+  return rows.flatMap((row, index) => {
+    if (tab === 'direct-indirect') return row.direct === null || row.indirect === null ? [] : [{ gene: row.gene, x: row.direct, y: row.indirect, series: 'Gene' }]
+    const values = tab === 'huge' ? [['ln(HuGE)', row.huge !== null && row.huge > 0 ? Math.log(row.huge) : null] as const]
+      : tab === 'comparison' ? [['Combined', row.combined] as const, ['ln(HuGE)', row.huge !== null && row.huge > 0 ? Math.log(row.huge) : null] as const]
+        : [['Combined', row.combined] as const, ['Direct', row.direct] as const, ['Indirect', row.indirect] as const]
+    return values.flatMap(([series, y]) => y === null ? [] : [{ gene: row.gene, x: index + 1, y, series }])
+  })
+}
+
+export function geneSupportEvidence(value: number | null): string {
+  return value === null ? 'Not available' : value > 3 ? 'Very strong' : value >= 2 ? 'Strongly suggestive' : value >= 1 ? 'Nominally significant' : 'Not significant'
+}
+
+export function formatGeneSupport(value: number | null): string {
+  return value === null ? 'Not returned' : String(Number(value.toPrecision(4)))
 }

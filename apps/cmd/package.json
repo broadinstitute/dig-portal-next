@@ -6,9 +6,9 @@
     "scripts": {
         "build": "nuxt generate",
         "validate-content": "node ./tools/validate-content.mjs",
-        "dev": "nuxt dev",
+        "dev": "nuxt dev --envName portalDev",
         "postinstall": "nuxt prepare",
-        "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/layer-shadowing.test.mjs",
+        "test": "node --test ./test/smoke.test.mjs ./test/content-validation.test.mjs ./test/layer-shadowing.test.mjs ./test/dev-content-isolation.test.mjs",
         "typecheck": "nuxt typecheck"
     },
     "dependencies": {

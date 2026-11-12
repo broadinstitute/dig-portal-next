@@ -65,3 +65,30 @@ IDs. Fixture sources and reductions are recorded in
 
 CMD supplies this service URL through public build-time config; use
 `NUXT_PUBLIC_PROVENANCE_URL` when rebuilding for another environment (D-23).
+
+## Gene-level genetic support
+
+The following typed queries use the caller's configured BioIndex host:
+
+- `pigeanGeneSupport(phenotype, model, options?)`: `pigean-gene-phenotype`,
+  with phenotype, sigma, annotation collection keys; default limit 1,000.
+- `hugeGeneScores(phenotype, options?)`: `huge-phenotype`; default limit 1,000.
+- `falconGeneProbabilities(phenotype, options?)`: `falcon.trait.associated.genes`;
+  default limit 2,000. This index was verified on production; no hidden dev-host
+  fallback is used.
+- `pigeanGeneSets(phenotype, gene, model, options?)`: `pigean-joined-gene`,
+  with phenotype, gene, sigma, annotation collection keys; default limit 1,000.
+
+All follow continuations, accept cancellation, report completeness, and reject
+records belonging to another requested phenotype, gene, or PIGEAN model.
+The model is supplied by the caller (CMD configures sigma 2 and `mouse_msigdb`
+in `portal.config.ts`). These queries have no ancestry key.
+
+Preserve the source units: PIGEAN `combined`, `log_bf` and `prior` are reported
+support scores; `huge-phenotype.huge` is a raw HuGE score, not the PIGEAN feed's
+similarly named `huge_score`. Natural-log HuGE values are a plot transformation
+only. Multiple HuGE loci can share a gene. The HuGE tab retains every locus;
+comparisons explicitly choose the highest returned score per exact phenotype
+and gene ID. Missing matches remain null, and zero FALCON probabilities remain
+zero. Sources and reduced fixtures are documented in
+[`gene-support-sources.md`](./test/fixtures/gene-support-sources.md).

@@ -58,6 +58,7 @@ const plots = computed(() => {
 })
 const failedPlots = ref(new Set<string>())
 const provenanceOpen = ref(false)
+const legacyPhenotypeLink = (name: string) => `https://hugeamp.org/phenotype.html?${new URLSearchParams({ phenotype: name })}`
 watch(() => [state.value.phenotype, state.value.ancestry], () => { provenanceOpen.value = false })
 
 useHead(() => ({
@@ -161,6 +162,12 @@ useHead(() => ({
           </template>
         </UModal>
         <PhenotypeAssociations v-if="!unknownAncestry" :key="JSON.stringify([phenotype.name, state.ancestry])" :phenotype="phenotype" :ancestry="state.ancestry" />
+        <PhenotypeGeneticSupport :key="phenotype.name" :phenotype="phenotype" :model="portal.geneticSupport" />
+        <section class="space-y-2 rounded-lg border border-default p-4" aria-labelledby="genetic-factors-heading">
+          <h2 id="genetic-factors-heading" class="text-xl font-semibold">Genetic factors</h2>
+          <p class="text-sm text-muted">Explore the genetic factors underlying this phenotype on the legacy portal.</p>
+          <a :href="legacyPhenotypeLink(phenotype.name)" class="text-primary underline">View genetic factors</a>
+        </section>
         <section class="mt-10 space-y-4" aria-labelledby="associated-datasets-heading">
           <div class="space-y-1">
             <h2 id="associated-datasets-heading" class="text-xl font-semibold">Datasets with associations</h2>

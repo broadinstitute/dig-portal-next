@@ -1,4 +1,4 @@
-import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation } from '@dig-portal/domain'
+import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -234,6 +234,77 @@ export function decodeVariantAssociation(value: unknown): VariantAssociation {
   }
 }
 
+function supportRecord(value: unknown): Record<string, unknown> {
+  if (!isRecord(value)) throw new BioIndexResponseError('Invalid genetic-support record.')
+  return value
+}
+
+function supportString(value: unknown): string {
+  if (typeof value !== 'string' || !value) throw new BioIndexResponseError('Invalid genetic-support identifier.')
+  return value
+}
+
+function supportNumber(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new BioIndexResponseError('Invalid genetic-support statistic.')
+  return value
+}
+
+function optionalSupportString(value: unknown): string | null {
+  return value == null ? null : supportString(value)
+}
+
+function decodePigeanModel(row: Record<string, unknown>): PigeanModel {
+  const sigma = supportNumber(row.sigma)
+  if (sigma <= 0) throw new BioIndexResponseError('Invalid PIGEAN sigma.')
+  return { sigma, geneSetCollection: supportString(row.gene_set_size) }
+}
+
+export function decodePigeanGeneSupport(value: unknown): PigeanGeneSupport {
+  const row = supportRecord(value)
+  return {
+    ...decodePigeanModel(row),
+    phenotype: supportString(row.phenotype), gene: supportString(row.gene),
+    combined: supportNumber(row.combined), direct: supportNumber(row.log_bf), indirect: supportNumber(row.prior),
+    factor: optionalSupportString(row.factor), factorLabel: optionalSupportString(row.label),
+  }
+}
+
+export function decodeHugeGeneScore(value: unknown): HugeGeneScore {
+  const row = supportRecord(value)
+  const start = supportNumber(row.start)
+  const end = supportNumber(row.end)
+  const score = supportNumber(row.huge)
+  const common = row.bf_common == null ? null : supportNumber(row.bf_common)
+  const rare = row.bf_rare == null ? null : supportNumber(row.bf_rare)
+  if (!Number.isSafeInteger(start) || start < 0 || !Number.isSafeInteger(end) || end < start
+    || score < 0 || (common !== null && common < 0) || (rare !== null && rare < 0)) {
+    throw new BioIndexResponseError('Invalid HuGE score or locus.')
+  }
+  return { phenotype: supportString(row.phenotype), gene: supportString(row.gene), chromosome: supportString(row.chromosome), start, end, score, common, rare }
+}
+
+export function decodeFalconGeneProbability(value: unknown): FalconGeneProbability {
+  const row = supportRecord(value)
+  const pip = supportNumber(row.PIP)
+  if (pip < 0 || pip > 1) throw new BioIndexResponseError('Invalid FALCON probability.')
+  return { phenotype: supportString(row.TRAIT), gene: supportString(row.GENE), pip }
+}
+
+export function decodePigeanGeneSetEvidence(value: unknown): PigeanGeneSetEvidence {
+  const row = supportRecord(value)
+  return { ...decodePigeanModel(row), phenotype: supportString(row.phenotype), gene: supportString(row.gene), geneSet: supportString(row.gene_set), jointEffect: supportNumber(row.beta), source: supportString(row.source) }
+}
+
+function supportKey(value: string): string {
+  if (typeof value !== 'string' || !value || value.includes(',')) throw new TypeError('A single genetic-support query key is required.')
+  return value
+}
+
+function modelKeys(model: PigeanModel): string {
+  if (!model || !Number.isFinite(model.sigma) || model.sigma <= 0) throw new TypeError('A positive PIGEAN sigma is required.')
+  return `${model.sigma},${supportKey(model.geneSetCollection)}`
+}
+
 export function createBioIndexClient(options: BioIndexClientOptions) {
   const baseUrl = normalizeBaseUrl(options.baseUrl)
   const fetchRequest = options.fetch ?? globalThis.fetch
@@ -351,6 +422,40 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
         },
         { ...requestOptions, limit: requestOptions.limit ?? 1000 },
       )
+    },
+
+    async pigeanGeneSupport(phenotype: string, model: PigeanModel, requestOptions: BioIndexQueryOptions = {}) {
+      const keys = `${supportKey(phenotype)},${modelKeys(model)}`
+      return queryAll('pigean-gene-phenotype', keys, (value) => {
+        const row = decodePigeanGeneSupport(value)
+        if (row.phenotype !== phenotype || row.sigma !== model.sigma || row.geneSetCollection !== model.geneSetCollection) throw new BioIndexResponseError('PIGEAN record does not match the requested model.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
+    },
+
+    async hugeGeneScores(phenotype: string, requestOptions: BioIndexQueryOptions = {}) {
+      return queryAll('huge-phenotype', supportKey(phenotype), (value) => {
+        const row = decodeHugeGeneScore(value)
+        if (row.phenotype !== phenotype) throw new BioIndexResponseError('HuGE record does not match the requested phenotype.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
+    },
+
+    async falconGeneProbabilities(phenotype: string, requestOptions: BioIndexQueryOptions = {}) {
+      return queryAll('falcon.trait.associated.genes', supportKey(phenotype), (value) => {
+        const row = decodeFalconGeneProbability(value)
+        if (row.phenotype !== phenotype) throw new BioIndexResponseError('FALCON record does not match the requested phenotype.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 2000 })
+    },
+
+    async pigeanGeneSets(phenotype: string, gene: string, model: PigeanModel, requestOptions: BioIndexQueryOptions = {}) {
+      const keys = `${supportKey(phenotype)},${supportKey(gene)},${modelKeys(model)}`
+      return queryAll('pigean-joined-gene', keys, (value) => {
+        const row = decodePigeanGeneSetEvidence(value)
+        if (row.phenotype !== phenotype || row.gene !== gene || row.sigma !== model.sigma || row.geneSetCollection !== model.geneSetCollection) throw new BioIndexResponseError('Gene-set evidence does not match the requested gene and model.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
     },
 
     async match(index: string, query: string, requestOptions: BioIndexQueryOptions = {}): Promise<BioIndexPage<string>> {
