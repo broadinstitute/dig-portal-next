@@ -6,9 +6,12 @@ function unwrap(node) {
 }
 
 /** Read selected static dependency fields without loading or executing Nuxt config. */
-export function nuxtConfigReferences(contents, filename) {
+export function nuxtConfigReferences(contents, filename, { rejectInvalidSyntax = false } = {}) {
   const source = ts.createSourceFile(filename, contents, ts.ScriptTarget.Latest, true);
-  if (source.parseDiagnostics.length) return []; // The script validator reports syntax errors.
+  if (source.parseDiagnostics.length) {
+    if (rejectInvalidSyntax) throw new Error('Nuxt config has syntax errors.');
+    return []; // The shared script validator reports syntax errors separately.
+  }
   const bindings = new Map(), references = [];
   for (const statement of source.statements) {
     if (ts.isVariableStatement(statement) && (statement.declarationList.flags & ts.NodeFlags.Const)) {

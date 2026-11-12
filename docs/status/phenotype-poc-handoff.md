@@ -22,8 +22,11 @@ end of a working session with the next actionable steps and verified results.
   `f3fecdb`, static glob checks in `d12fa46`. This checkpoint adds CMD's app-owned
   base portal-definition schema to the existing build/content guard (`badbf69`).
   `790139e` checks selected static dependency strings in shared Nuxt configs.
-  This checkpoint adds alias targets, component directories and configured
-  import directories/preset sources to those checks.
+  `fee609f` adds alias targets, component directories and configured import
+  directories/preset sources. This checkpoint adds a bounded D-30 check for
+  remote Git layer sources in static Nuxt `extends` values across apps/packages/
+  layers, without executing configs or fetching layers. Local and package
+  layers remain allowed; see the verification scope below.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
@@ -50,8 +53,8 @@ end of a working session with the next actionable steps and verified results.
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
-  for this task was clean `790139e`. Alias/scan enforcement, its tests and this handoff
-  are committed as one task. Check current HEAD/status rather than interpreting
+  for this task was clean `fee609f`. Remote Git layer enforcement, its tests and
+  this handoff are committed as one task. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
@@ -195,6 +198,26 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+Remote Git layer checkpoint (2026-11-12): `portal validate` now inspects static
+`extends` sources in app/package/layer Nuxt configs, including nested local
+layers without manifests. It reuses constant/spread/tuple/environment/CommonJS
+inspection and rejects explicit Git-provider and transport syntax, known public
+Git-host HTTP URLs and HTTP `.git` path segments. Config is never executed;
+layers are never fetched by this check. Errors omit URLs/options and malformed
+config syntax fails validation. Local paths, local Git repository paths, package
+references and generic HTTP archives are not rejected by this Git-specific rule.
+Generated/dependency directories and symlinks are skipped. The original app
+regression passed validation incorrectly; five new focused tests now pass.
+Workspace validation and all 117 shared tests pass (43 CLI, 33 API-client,
+2 content, 39 phenotype-feature). No dependencies or app runtime changed;
+previous CMD typecheck/build/11 tests remain the app verification. Loader syntax
+was checked against installed c12 3.3.4 and Giget 3.3.1. Custom providers/resolvers/
+options, unrecognized private-host URLs without `.git`, remote manifest
+indirection and computed/cross-file or dependency-tree config remain manual
+review gaps. Current CI runs install/prepare **before** validation: this is a
+workspace policy gate, not a pre-install network safeguard. Browser QA remains
+pending because the browser host was unavailable at this session's last check.
 
 Nuxt scan/alias checkpoint (2026-11-12): shared configs now check alias values,
 component directory strings/arrays/options and explicit import/preset module
@@ -492,7 +515,10 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Keep regional plots, factors and CFDE deferred. Do not duplicate completed
    data sections or copy the old CS2CT ancestry-first query order.
    External Vue blocks, static CSS imports and supported literal glob macros are
-   now checked, as are selected static Nuxt config fields. Next bounded tasks
+   now checked, as are selected static Nuxt config fields. Static remote Git
+   `extends` sources also have a bounded D-30 check; custom providers and dynamic
+   config still require review, and validation runs after install/prepare in CI.
+   Next bounded tasks
    can address remaining config fields or portal-ID
    branching. CMD's base definition is validated; future portal/variant and
    general content schemas remain. Keep residual auto-import

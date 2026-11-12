@@ -8,6 +8,7 @@ import spawn from 'cross-spawn';
 import { affectedPortals } from './affected.mjs';
 import { validateDependencyDirection } from './boundaries.mjs';
 import { importEffectorCatalog } from './content-import.mjs';
+import { validateLayerSources } from './layer-sources.mjs';
 
 const workspacePackages = ['apps', 'packages', 'layers', 'tooling'];
 
@@ -194,8 +195,9 @@ export async function main(args, root = path.resolve(path.dirname(fileURLToPath(
     if (errors.length === 0) {
       try {
         errors.push(...await validateDependencyDirection(root, discoverPackages(root)));
+        errors.push(...validateLayerSources(root));
       } catch (error) {
-        console.error(`error: Dependency analysis failed: ${error.message}`);
+        console.error(`error: Workspace analysis failed: ${error.message}`);
         return 1;
       }
     }
@@ -203,7 +205,7 @@ export async function main(args, root = path.resolve(path.dirname(fileURLToPath(
       for (const error of errors) console.error(`error: ${error}`);
       return 1;
     }
-    console.log('Workspace and explicit dependency checks passed.');
+    console.log('Workspace, explicit dependency and static layer-source checks passed.');
     return 0;
   }
   if (command === 'test' && rest.length === 0) return runTests(root);

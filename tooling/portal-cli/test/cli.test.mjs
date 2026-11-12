@@ -21,6 +21,7 @@ import {
     validateWorkspace,
 } from "../src/cli.mjs";
 import { importEffectorCatalog } from "../src/content-import.mjs";
+import { validateLayerSources } from "../src/layer-sources.mjs";
 
 function createWorkspace(t) {
     const root = mkdtempSync(path.join(os.tmpdir(), "portal-cli-"));
@@ -858,6 +859,76 @@ test("allows shared scan paths and preset sources without treating labels or nam
     ].join('\n'));
     writeFixture(root, 'layers/platform/nuxt.config.cjs', 'module.exports = { components: false, imports: { scan: false, dirs: ["~/disabled-scan"] } };');
     assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
+});
+
+test("workspace validation rejects a remote Git layer in an application config", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', 'export default defineNuxtConfig({ extends: ["github:example/layer"] });');
+    assert.equal(await main(['validate'], root), 1);
+});
+
+test("rejects explicit Git providers, transports and repository URLs without disclosing credentials", (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    const sources = [
+        'gh:example/layer', 'github:example/layer#main', 'gitlab:group/layer',
+        'bitbucket:team/layer', 'sourcehut:~team/layer', 'git:example/layer',
+        'git://example.test/team/layer', 'ssh://git@example.test/team/layer',
+        'git+https://example.test/team/layer', 'https+git://example.test/team/layer',
+        'ssh+git://git@example.test/team/layer', 'git@example.test:team/layer.git',
+        'https://github.com/example/layer', 'https://api.github.com/repos/example/layer/tarball/main',
+        'https://codeload.github.com/example/layer/tar.gz/main', 'https://raw.githubusercontent.com/example/layer/main/template.json',
+        'https://gitlab.com/team/layer/-/archive/main/layer.tar.gz', 'https://bitbucket.org/team/layer/get/main.tar.gz',
+        'https://git.sr.ht/~team/layer/archive/main.tar.gz',
+        'https://fixture-user:fixture-secret@example.test/team/layer.git?token=fixture-token#main',
+    ];
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', `export default defineNuxtConfig({ extends: ${JSON.stringify(sources)} });`);
+    const errors = validateLayerSources(root);
+    assert.equal(errors.length, sources.length, errors.join('\n'));
+    for (const error of errors) assert.match(error, /nuxt\.config\.ts config extends.*D-30/);
+    assert.doesNotMatch(errors.join('\n'), /fixture-user|fixture-secret|fixture-token/);
+});
+
+test("inspects local layer configs, static environments, tuple sources and CommonJS without executing config", (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    createPackage(root, 'layers', 'platform', { name: '@dig-portal/platform' });
+    createPackage(root, 'packages', 'shared', { name: '@dig-portal/shared' });
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', 'const base = { extends: [["github:example/layer", { auth: "fixture-secret" }]] }; export default defineNuxtConfig({ ...base, $env: { qa: { extends: "gitlab:group/layer" } }, $production: { extends: ["bitbucket:team/layer"] }, overrides: { extends: "gh:example/layer" } });');
+    writeFixture(root, 'layers/platform/nuxt.config.mts', 'throw new Error("must not execute"); export default { extends: "https://example.test/team/layer.git" };');
+    writeFixture(root, 'packages/shared/nuxt.config.cjs', 'module.exports = { extends: ["sourcehut:~team/layer"] };');
+    // A local/auto-discovered nested layer need not have its own package manifest.
+    writeFixture(root, 'apps/cmd/layers/theme/nuxt.config.mjs', 'export default { extends: "github:example/theme" };');
+    const errors = validateLayerSources(root);
+    assert.equal(errors.length, 7, errors.join('\n'));
+    assert.match(errors.join('\n'), /\$env\.qa\.extends/);
+    assert.match(errors.join('\n'), /\$production\.extends/);
+    assert.doesNotMatch(errors.join('\n'), /fixture-secret/);
+});
+
+test("allows local and package layers and excludes unrelated text and generated configs", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    const local = ['../../layers/platform', '@dig-portal/platform', '@scope/layer/subpath', './github:local', 'C:\\local\\layer', 'file:///local/layer', 'git:./local-repository', 'git:file:///local/repository', 'https://example.test/layer.tar.gz', 'https://github.com.example.test/layer.tar.gz?label=.git'];
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', [
+        'const old = { extends: ["github:example/overridden"] };',
+        `export default defineNuxtConfig({ ...old, extends: ${JSON.stringify(local)},`,
+        'modules: [[() => {}, { extends: ["github:example/option-text"] }]],',
+        'runtimeConfig: { public: { extends: "gitlab:example/label-only" } } });',
+        '// extends: ["github:example/comment"]',
+    ].join('\n'));
+    for (const directory of ['.data', '.nuxt-dev', '.output', 'node_modules', 'dist', 'coverage', '.cache', '.git']) writeFixture(root, `apps/cmd/${directory}/nuxt.config.ts`, 'export default { extends: "github:example/ignored" };');
+    writeFixture(root, 'apps/cmd/settings.ts', 'export const label = { extends: "github:example/text-only" };');
+    assert.deepEqual(validateLayerSources(root), []);
+    assert.equal(await main(['validate'], root), 0);
+});
+
+test("reports malformed application configs instead of silently skipping layer validation", (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, 'apps', 'cmd', { name: '@dig-portal/cmd' });
+    writeFixture(root, 'apps/cmd/nuxt.config.ts', 'export default defineNuxtConfig({ extends: [');
+    assert.match(validateLayerSources(root).join('\n'), /nuxt\.config\.ts cannot be parsed for static layer-source validation/);
 });
 
 test("allows shared dependencies and applications importing shared code", async (t) => {

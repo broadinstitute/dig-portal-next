@@ -60,6 +60,29 @@ computed references outside these macros, other script languages, symlinked
 sources, dependency-tree references and portal-ID branching
 still need review. A green validation result does not prove their absence.
 
+## Layer sources
+
+`pnpm portal validate` also checks D-30's remote Git layer rule. It recursively
+inspects static `extends` values in `nuxt.config` JS/TS files under `apps`,
+`packages` and `layers`, including nested local layers without package manifests.
+The same constant/spread, tuple and environment handling described above applies.
+Config is never executed and layers are never fetched by this check. Malformed
+config syntax fails validation. Generated/dependency directories and symlinked
+sources are skipped.
+
+Explicit Git-provider prefixes, Git/SSH transport forms, SCP-style Git remotes,
+known public Git-host HTTP URLs and HTTP URLs with `.git` path segments fail
+validation. Diagnostics name the config/field and D-30, omitting source URLs and
+options that could contain credentials. Local paths, local Git repository paths,
+file URLs and package references remain allowed by this rule. Generic HTTP
+archives are outside this Git-specific check.
+
+This is partial static enforcement: custom providers/resolvers, provider options,
+unrecognized private-host URLs without `.git`, remote manifest indirection,
+computed/cross-file config and dependency-tree layers still require review.
+Current CI installs dependencies (including Nuxt prepare hooks) **before** running
+validation; this is a workspace policy gate, not a pre-install network safeguard.
+
 ## CMD development output
 
 Use `pnpm portal dev cmd` to start CMD. Its app script selects the `portalDev`
