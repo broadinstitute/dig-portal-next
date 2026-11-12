@@ -1,4 +1,4 @@
-import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
+import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type PathwayAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
 
 export interface PhenotypeRouteState {
   readonly phenotype: string | null
@@ -290,6 +290,45 @@ export function variantAssociationsCsv(records: readonly VariantAssociation[]): 
     record.rsId, record.consequence, record.nearestGenes.join(';'), record.pValue, record.beta,
     associationMetaKey(record.metaTypes), record.dataset, record.source,
   ]))
+}
+
+export type PathwaySort = 'pathwayName' | 'pValue' | 'beta' | 'standardError'
+export interface PathwayTableState {
+  readonly sort: PathwaySort
+  readonly order: 'asc' | 'desc'
+  readonly page: number
+}
+export const pathwayQueryKeys = ['pathwaySort', 'pathwayOrder', 'pathwayPage'] as const
+
+export function readPathwayTableState(query: Readonly<Record<string, unknown>>): PathwayTableState {
+  const sort = firstQueryValue(query.pathwaySort)
+  const page = Number(firstQueryValue(query.pathwayPage))
+  return {
+    sort: sort && ['pathwayName', 'pValue', 'beta', 'standardError'].includes(sort) ? sort as PathwaySort : 'pValue',
+    order: firstQueryValue(query.pathwayOrder) === 'desc' ? 'desc' : 'asc',
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+  }
+}
+
+export function pathwayTableQuery(state: PathwayTableState): Record<string, string> {
+  return {
+    ...(state.sort !== 'pValue' ? { pathwaySort: state.sort } : {}),
+    ...(state.order !== 'asc' ? { pathwayOrder: state.order } : {}),
+    ...(state.page !== 1 ? { pathwayPage: String(state.page) } : {}),
+  }
+}
+
+export function sortPathwayAssociations(rows: readonly PathwayAssociation[], state: PathwayTableState): PathwayAssociation[] {
+  return rows.slice().sort((a, b) => {
+    const comparison = state.sort === 'pathwayName' ? a.pathwayName.localeCompare(b.pathwayName) : a[state.sort] - b[state.sort]
+    return (state.order === 'desc' ? -comparison : comparison) || a.pathwayName.localeCompare(b.pathwayName)
+      || a.ancestry.localeCompare(b.ancestry) || a.phenotype.localeCompare(b.phenotype)
+  })
+}
+
+export function pathwayAssociationsCsv(rows: readonly PathwayAssociation[]): string {
+  return encodeCsv(['phenotype', 'ancestry', 'pathwayName', 'pValue', 'beta', 'stdErr', 'betaStdErr', 'numGenes'],
+    rows.map((row) => [row.phenotype, row.ancestry, row.pathwayName, row.pValue, row.beta, row.standardError, row.betaStandardError, row.geneCount]))
 }
 
 export type GeneSupportTab = 'combined' | 'huge' | 'comparison' | 'direct-indirect'

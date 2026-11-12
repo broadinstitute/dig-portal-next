@@ -1,7 +1,41 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readPathwayTableState, pathwayTableQuery, sortPathwayAssociations, pathwayAssociationsCsv } from '../src/index.ts'
 import { readCs2ctState, cs2ctQuery, cs2ctFilterError, cs2ctEligibleRows, cs2ctLabel, cs2ctTissueKey, missingCs2ctTissue, filterCs2ctRows, sortCs2ctRows, cs2ctCsv, cs2ctVariantRegion } from '../src/index.ts'
 import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages, readAssociationTableState, associationTableQuery, associationPValueError, associationMetaSummary, filterVariantAssociations, sortVariantAssociations, associationPage, formatAssociationPValue, formatAssociationEffect, variantAssociationsCsv, readGeneSupportState, geneSupportQuery, geneSupportRows, geneSupportMinimumError, filterGeneSupportRows, sortGeneSupportRows, geneticSupportCsv, geneSupportPlotPoints, geneSupportEvidence } from '../src/index.ts'
+
+const pathwayRow = (patch = {}) => ({ phenotype: 'CAD', ancestry: 'Mixed', pathwayName: 'PATH_A', pValue: 1e-8, beta: 0.25, standardError: 0.05, betaStandardError: null, geneCount: null, ...patch })
+
+test('roundtrips pathway sort/page query state and normalizes unknown or unsafe values', () => {
+  const state = readPathwayTableState({ pathwaySort: 'standardError', pathwayOrder: 'desc', pathwayPage: '3' })
+  assert.deepEqual(readPathwayTableState(pathwayTableQuery(state)), state)
+  assert.deepEqual(pathwayTableQuery(readPathwayTableState({})), {})
+  assert.deepEqual(readPathwayTableState({ pathwaySort: 'unknown', pathwayOrder: 'invalid', pathwayPage: '9007199254740992' }), { sort: 'pValue', order: 'asc', page: 1 })
+  assert.equal(readPathwayTableState({ pathwayPage: '-1' }).page, 1)
+  assert.equal(readPathwayTableState({ pathwaySort: ['beta', 'pValue'] }).sort, 'beta')
+})
+
+test('sorts pathway p-values, beta and standard error numerically without mutating records', () => {
+  const rows = Object.freeze([Object.freeze(pathwayRow({ pathwayName: 'B', pValue: 2e-20, beta: -2, standardError: 10 })), Object.freeze(pathwayRow({ pathwayName: 'A', pValue: 1e-20, beta: 10, standardError: 2 }))])
+  assert.equal(sortPathwayAssociations(rows, readPathwayTableState({}))[0].pathwayName, 'A')
+  assert.equal(sortPathwayAssociations(rows, readPathwayTableState({ pathwaySort: 'beta' }))[0].beta, -2)
+  assert.equal(sortPathwayAssociations(rows, readPathwayTableState({ pathwaySort: 'standardError' }))[0].standardError, 2)
+  assert.equal(sortPathwayAssociations(rows, readPathwayTableState({ pathwaySort: 'pathwayName', pathwayOrder: 'desc' }))[0].pathwayName, 'B')
+  assert.equal(rows[0].pathwayName, 'B')
+  const ties = [pathwayRow({ pathwayName: 'B' }), pathwayRow({ pathwayName: 'A' })]
+  assert.equal(sortPathwayAssociations(ties, readPathwayTableState({}))[0].pathwayName, 'A')
+})
+
+test('exports all pathway rows with raw precision, separate error fields and safe CSV text', () => {
+  const rows = Array.from({ length: 23 }, (_, index) => pathwayRow({ pathwayName: `PATH_${index}`, beta: -0.3451077951397377, standardError: 0.21346, betaStandardError: 0.074097, geneCount: 29 }))
+  assert.equal(associationPage(rows, 3, 10).records.length, 3)
+  const csv = pathwayAssociationsCsv(rows)
+  assert.equal(csv.trim().split('\r\n').length, 24)
+  assert.match(csv, /"-0\.3451077951397377","0\.21346","0\.074097","29"/)
+  const escaped = pathwayAssociationsCsv([pathwayRow({ pathwayName: '=A,"B"\nC' })])
+  assert.match(escaped, /"'=A,""B""\nC"/)
+  assert.match(escaped, /,,\r\n$/)
+})
 
 const csRow = (patch = {}) => ({ phenotype: 'CAD', ancestry: 'EU', annotation: 'accessible_chromatin', tissue: 'central_nervous_system', biosample: 'glial_cell', source: 'credible_set', dataset: 'dataset', credibleSetId: 'set1', chromosome: '6', clumpStart: 100, clumpEnd: 201, variantCount: 2, overlapLeadVariant: '6:200:G:A', overlapProbability: 0.9501932626366195, genericity: 1.5, score: 0.65, ...patch })
 

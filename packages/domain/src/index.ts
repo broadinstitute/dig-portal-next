@@ -59,6 +59,18 @@ export interface VariantAssociation {
   readonly source: string
 }
 
+export interface PathwayAssociation {
+  readonly phenotype: string
+  readonly ancestry: string
+  readonly pathwayName: string
+  readonly pValue: number
+  readonly beta: number
+  /** Source stdErr; betaStdErr is a separate field and is not substituted. */
+  readonly standardError: number
+  readonly betaStandardError: number | null
+  readonly geneCount: number | null
+}
+
 export interface PigeanModel {
   readonly sigma: number
   readonly geneSetCollection: string

@@ -1,4 +1,4 @@
-import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
+import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, PathwayAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -300,6 +300,19 @@ function supportKey(value: string): string {
   return value
 }
 
+export function decodePathwayAssociation(value: unknown): PathwayAssociation {
+  const row = supportRecord(value)
+  const pValue = supportNumber(row.pValue), beta = supportNumber(row.beta), standardError = supportNumber(row.stdErr)
+  const betaStandardError = row.betaStdErr == null ? null : supportNumber(row.betaStdErr)
+  const geneCount = row.numGenes == null ? null : supportNumber(row.numGenes)
+  if (pValue < 0 || pValue > 1 || standardError < 0 || (betaStandardError !== null && betaStandardError < 0)
+    || (geneCount !== null && (!Number.isSafeInteger(geneCount) || geneCount < 0))) throw new BioIndexResponseError('Invalid pathway statistics.')
+  return {
+    phenotype: supportString(row.phenotype), ancestry: supportString(row.ancestry), pathwayName: supportString(row.pathwayName),
+    pValue, beta, standardError, betaStandardError, geneCount,
+  }
+}
+
 export function decodeCs2ctRecord(value: unknown): Cs2ctRecord {
   const row = supportRecord(value)
   const clumpStart = supportNumber(row.clumpStart), clumpEnd = supportNumber(row.clumpEnd)
@@ -482,6 +495,15 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
         if (row.phenotype !== phenotype || row.gene !== gene || row.sigma !== model.sigma || row.geneSetCollection !== model.geneSetCollection) throw new BioIndexResponseError('Gene-set evidence does not match the requested gene and model.')
         return row
       }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
+    },
+
+    async pathwayAssociations(phenotype: string, ancestry = '', requestOptions: BioIndexQueryOptions = {}) {
+      const keys = [supportKey(phenotype), ...(ancestry ? [supportKey(ancestry)] : [])]
+      return queryAll('pathway-associations', keys.join(','), (value) => {
+        const row = decodePathwayAssociation(value)
+        if (row.phenotype !== phenotype || (ancestry && row.ancestry !== ancestry)) throw new BioIndexResponseError('Pathway record does not match the requested phenotype and ancestry.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 100 })
     },
 
     async cs2ctAnnotations(requestOptions: BioIndexRequestOptions = {}): Promise<readonly string[]> {

@@ -1,0 +1,68 @@
+{
+  "cad": [
+    {
+      "ancestry": "Mixed",
+      "beta": 0.3451077951397377,
+      "pValue": 7.568097563589512e-13,
+      "pathwayName": "REACTOME_PLASMA_LIPOPROTEIN_ASSEMBLY_REMODELING_AND_CLEARANCE",
+      "phenotype": "CAD",
+      "stdErr": 0.048790653181857255
+    },
+    {
+      "ancestry": "Mixed",
+      "beta": 0.5269260940288983,
+      "pValue": 8.489759101305962e-13,
+      "pathwayName": "WP_STATIN_INHIBITION_OF_CHOLESTEROL_PRODUCTION",
+      "phenotype": "CAD",
+      "stdErr": 0.07466420638357786
+    },
+    {
+      "ancestry": "Mixed",
+      "beta": 0.697181662691916,
+      "pValue": 0.000011709892247104286,
+      "pathwayName": "GOBP_NEURAL_PLATE_PATTERN_SPECIFICATION",
+      "phenotype": "CAD",
+      "stdErr": 0.16483734142302797
+    }
+  ],
+  "european": [
+    {
+      "ancestry": "EU",
+      "beta": 1.8523,
+      "betaStdErr": 0.074097,
+      "numGenes": 29,
+      "pValue": 2.2088e-18,
+      "pathwayName": "WP_STATIN_INHIBITION_OF_CHOLESTEROL_PRODUCTION",
+      "phenotype": "CAD",
+      "stdErr": 0.21346
+    },
+    {
+      "ancestry": "EU",
+      "beta": 2.5087,
+      "betaStdErr": 0.074568,
+      "numGenes": 16,
+      "pValue": 3.5666e-17,
+      "pathwayName": "WP_METABOLIC_PATHWAY_OF_LDL_HDL_AND_TG_INCLUDING_DISEASES",
+      "phenotype": "CAD",
+      "stdErr": 0.30031
+    }
+  ],
+  "t2d": [
+    {
+      "ancestry": "Mixed",
+      "beta": 1.0308125884550345,
+      "pValue": 2.886556857989411e-52,
+      "pathwayName": "HP_ABNORMAL_WAIST_TO_HIP_RATIO",
+      "phenotype": "T2D",
+      "stdErr": 0.06796033139625546
+    },
+    {
+      "ancestry": "Mixed",
+      "beta": 0.8817846722110537,
+      "pValue": 5.576758185301343e-44,
+      "pathwayName": "HP_LATE_ONSET",
+      "phenotype": "T2D",
+      "stdErr": 0.0636233809637173
+    }
+  ]
+}

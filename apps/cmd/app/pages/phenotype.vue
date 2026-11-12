@@ -212,6 +212,7 @@ useHead(() => ({
             </table>
           </div>
         </section>
+        <PhenotypePathways v-if="!unknownAncestry" :key="`pathways:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :ancestry="state.ancestry" />
         <EffectorGeneLists :phenotype="phenotype.name" />
       </template>
     </ClientOnly>

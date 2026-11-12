@@ -1,7 +1,57 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { decodePathwayAssociation } from '../src/index.ts'
 import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation, decodePigeanGeneSupport, decodeHugeGeneScore, decodeFalconGeneProbability, decodePigeanGeneSetEvidence, decodeCs2ctRecord } from '../src/index.ts'
+
+test('decodes recorded pathway statistics without mixing distinct standard errors or transforming beta', () => {
+  const records = fixture('pathway-records')
+  const cad = decodePathwayAssociation(records.cad[0])
+  const eu = decodePathwayAssociation(records.european[0])
+  assert.equal(cad.standardError, records.cad[0].stdErr)
+  assert.equal(cad.betaStandardError, null)
+  assert.equal(cad.geneCount, null)
+  assert.equal(eu.standardError, 0.21346)
+  assert.equal(eu.betaStandardError, 0.074097)
+  assert.equal(eu.geneCount, 29)
+  assert.equal(decodePathwayAssociation({ ...records.cad[0], beta: -1.25, pValue: 0, stdErr: 0, numGenes: 0, betaStdErr: 0 }).beta, -1.25)
+  for (const patch of [{ pValue: -1 }, { pValue: 1.1 }, { beta: Infinity }, { stdErr: -1 }, { stdErr: undefined }, { betaStdErr: -1 }, { numGenes: 1.5 }, { pathwayName: '' }, { phenotype: null }]) {
+    assert.throws(() => decodePathwayAssociation({ ...records.cad[0], ...patch }), BioIndexResponseError)
+  }
+})
+
+test('queries pathway associations with verified phenotype/ancestry keys, cap and cancellation', async () => {
+  const records = fixture('pathway-records')
+  const envelope = (data) => ({ data, count: data.length, continuation: null, restricted: 0, progress: { bytes_read: 100, bytes_total: 100 } })
+  const mock = mockFetch(envelope(records.cad), envelope(records.european), envelope(records.t2d))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const combined = await client.pathwayAssociations('CAD', '', { signal })
+  await client.pathwayAssociations('CAD', 'EU', { signal, limit: 20 })
+  await client.pathwayAssociations('T2D', '', { signal })
+  assert.deepEqual(mock.calls.map(({ url }) => url), [
+    '/bioindex/api/bio/query/pathway-associations?q=CAD&limit=100',
+    '/bioindex/api/bio/query/pathway-associations?q=CAD%2CEU&limit=20',
+    '/bioindex/api/bio/query/pathway-associations?q=T2D&limit=100',
+  ])
+  assert.equal(combined.completeness, 'complete')
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  await assert.rejects(client.pathwayAssociations('CAD,EU'), TypeError)
+  await assert.rejects(client.pathwayAssociations('CAD', 'EU,CAD'), TypeError)
+})
+
+test('rejects mismatched pathway trait and ancestry on initial and continuation pages', async () => {
+  const row = fixture('pathway-records').european[0]
+  const envelope = (data) => ({ data, count: data.length, continuation: null, restricted: 0, progress: { bytes_read: 100, bytes_total: 100 } })
+  for (const patch of [{ phenotype: 'T2D' }, { ancestry: 'EA' }]) {
+    const wrong = envelope([{ ...row, ...patch }])
+    const mock = mockFetch(wrong, { ...envelope([row]), continuation: 'next', progress: { bytes_read: 50, bytes_total: 100 } }, wrong)
+    const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+    await assert.rejects(client.pathwayAssociations('CAD', 'EU'), BioIndexResponseError)
+    await assert.rejects(client.pathwayAssociations('CAD', 'EU'), BioIndexResponseError)
+    assert.match(mock.calls[2].url, /\/cont\?token=next/)
+  }
+})
 
 function fixture(name) {
   return JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'))
