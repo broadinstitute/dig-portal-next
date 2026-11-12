@@ -565,6 +565,52 @@ test("rejects application imports in TypeScript and Vue shared code", async (t) 
     assert.match(errors.join("\n"), /Example\.vue.*apps\/cmd\/data/);
 });
 
+test("rejects application references in external Vue blocks", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    createPackage(root, "layers", "platform", { name: "@dig-portal/platform" });
+    writeFixture(root, "apps/cmd/data.ts", "export const value = 1;\n");
+    writeFixture(root, "apps/cmd/template.html", "<p>Application template</p>\n");
+    writeFixture(root, "packages/shared/External.vue", [
+        '<template src="../../apps/cmd/template.html"></template>',
+        '<script src="../../apps/cmd/data.ts"></script>',
+        '<style src="~/app.css"></style>',
+        '<style scoped src="@dig-portal/cmd/private.css"></style>',
+        '<i18n src="#shared/messages.json"></i18n>',
+    ].join("\n"));
+    writeFixture(root, "layers/platform/External.vue", `<template src="${path.join(root, "apps/cmd/template.html").replaceAll("\\", "/")}"></template>`);
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.equal(errors.length, 6);
+    assert.match(errors.join("\n"), /External\.vue.*template.*apps\/cmd\/template/);
+    assert.match(errors.join("\n"), /External\.vue.*script.*apps\/cmd\/data/);
+    assert.match(errors.join("\n"), /External\.vue.*style.*~\/app\.css/);
+    assert.match(errors.join("\n"), /External\.vue.*style.*@dig-portal\/cmd\/private\.css/);
+    assert.match(errors.join("\n"), /External\.vue.*i18n.*#shared\/messages/);
+    assert.equal(await main(["validate"], root), 1);
+});
+
+test("allows shared external Vue blocks and ignores comments and generated dependency trees", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "packages/shared/local.html", "<p>Shared template</p>\n");
+    writeFixture(root, "packages/shared/local.ts", "export const value = 1;\n");
+    writeFixture(root, "packages/shared/Allowed.vue", '<!-- <style src="../../apps/cmd/private.css"></style> -->\n<template src="./local.html"></template>\n<script src="./local.ts"></script>\n<style src="./local.css"></style>');
+    for (const directory of ["node_modules", ".nuxt-dev", ".output", ".data", "dist"]) {
+        writeFixture(root, `packages/shared/${directory}/Ignored.vue`, '<template src="~/private.html"></template>');
+    }
+    assert.deepEqual(await validateDependencyDirection(root, discoverPackages(root)), []);
+});
+
+test("fails dependency validation when a shared Vue source cannot be parsed", async (t) => {
+    const root = createWorkspace(t);
+    createPackage(root, "packages", "shared", { name: "@dig-portal/shared" });
+    writeFixture(root, "packages/shared/Broken.vue", "<template><div></template>");
+    const errors = await validateDependencyDirection(root, discoverPackages(root));
+    assert.match(errors.join("\n"), /Broken\.vue cannot be parsed/);
+});
+
 test("allows shared dependencies and applications importing shared code", async (t) => {
     const root = createWorkspace(t);
     createPackage(root, "apps", "cmd", { name: "@dig-portal/cmd" });

@@ -15,17 +15,19 @@ end of a working session with the next actionable steps and verified results.
 
 ## Current state
 
-- **Resume checkpoint:** this slice started from clean commit `e89c33d`,
-  which includes genetic correlations and all earlier features. Globally
-  enriched annotations and the deferred CFDE link card are implemented.
+- **Resume checkpoint:** global enrichment is committed in `a22cc34`, and the
+  deferred CFDE card in `fc932c6`. All planned visible phenotype sections have
+  implementations or legacy links. This foundation checkpoint extends D-05
+  validation to external Vue block `src` attributes and corrects stale gate notes.
   The planned phenotype sections now have an implementation or legacy link.
   The next tasks are foundation-gap verification and browser/hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
-  isolated `portalDev` command was verified on 2026-11-11. No new dependencies
-  or architecture decisions were introduced.
+  isolated `portalDev` command was verified on 2026-11-11. Runtime dependencies
+  are unchanged; the CLI now directly owns the existing exact-pinned Vue SFC
+  parser 3.5.45, adding only its lockfile importer reference. No decisions changed.
 - **Latest fix:** the user reported an effector catalog load failure after
   validation ran alongside their dev server. Its dump endpoint returned empty
   HTTP 204 because prepare/typecheck rewrote `.nuxt/content` with a prepare-only
@@ -36,16 +38,15 @@ end of a working session with the next actionable steps and verified results.
   server needs one restart through `pnpm portal dev cmd --host 127.0.0.1 --no-fork`
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
-- The working branch is `feature/phenotype-poc`; the baseline for this slice
-  was `e89c33d`. Global enrichment, its tests/fixtures and these notes belong
+- The working branch is `feature/phenotype-poc`; the baseline for this task
+  was clean `fc932c6`. The D-05 external-block check, its tests and these notes belong
   to the same task commit. Check current HEAD/status rather than interpreting
   historical “uncommitted” log entries as the current worktree state.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
   do not reconstruct or undo that review without new evidence.
 - The worktree was clean at this resume. Check `git status --short --branch`
-  again and preserve unrelated or concurrent edits. The current slice adds no
-  dependencies or lockfile changes. Genetic-support model settings live in `portal.config.ts` (sigma 2,
+  again and preserve unrelated or concurrent edits. Genetic-support model settings live in `portal.config.ts` (sigma 2,
   `mouse_msigdb`) per D-21.
 - [The CMD phenotype page](../../apps/cmd/app/pages/phenotype.vue) supports
   `/phenotype?phenotype=CAD` and optional `ancestry`, phenotype selection,
@@ -183,6 +184,20 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+D-05 checkpoint (2026-11-12): the new external-Vue regression failed against
+the previous checker (zero of six application references detected), then passed
+after SFC block parsing. Tests cover relative/absolute application paths,
+application packages and aliases across template/script/style/custom blocks,
+allowed shared sources, comments, generated directories and malformed SFCs.
+Frozen offline install, real workspace validation, diff checks and all 96 shared
+tests pass (22 CLI, 33 API-client, 2 content, 39 phenotype-feature).
+The tooling-only change does not alter portal runtime code; the latest CMD
+typecheck/static build/seven tests passed for the preceding CFDE checkpoint.
+Audit correction: shared-package tests/typechecks and the current catalog's
+content guard already run in bootstrap CI. Remaining work is broader D-05
+coverage, portal-definition/general content schemas, affected/variant matrices,
+the intermittent layer-shadow failure, and browser/hosted/Linux verification.
 
 CFDE link-card checkpoint (2026-11-12): CMD typecheck, static build, all seven
 CMD tests and diff checks passed. This small route-only change adds no requests,
@@ -363,11 +378,15 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Stop temporary servers started by the agent afterward; leave user-owned servers
    running. Verify CORS and Cloudflare on the hosted preview
    separately; localhost success does not establish hosted behavior.
-2. Audit the remaining foundation gaps against actual tooling/CI, then take a
+2. Continue the remaining foundation gaps against actual tooling/CI, then take a
    bounded enforcement or gate task at a time. The [section plan](./phenotype-poc.md#section-plan)
    now has implementations or link cards for every planned visible section.
    Keep regional plots, factors and CFDE deferred. Do not duplicate completed
    data sections or copy the old CS2CT ancestry-first query order.
+   External Vue blocks are now checked. A next bounded task can cover static
+   stylesheet-body imports or glob references; keep residual dynamic/auto-import
+   and portal-ID branching limitations explicit. Shared tests/typechecks and
+   catalog content validation are already implemented in CI.
 3. Keep the agreed deferral rule: a significant rewrite used on only this
    page stays on the legacy portal and gets a link card. Finish the remaining
    D-05 enforcement and D-31b merge gates before merge, and arrange the hosted

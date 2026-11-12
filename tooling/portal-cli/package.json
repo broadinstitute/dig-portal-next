@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@dig-portal/content": "workspace:*",
+    "@vue/compiler-sfc": "3.5.45",
     "cross-spawn": "7.0.6",
     "csv-parse": "7.0.3",
     "dependency-cruiser": "18.7.2"

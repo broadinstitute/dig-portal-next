@@ -14,6 +14,20 @@ Selection uses pnpm's workspace dependency graph and compares each portal with i
 
 This command currently selects application directories only; CMD variants and artifact packaging are not implemented yet.
 
+## Dependency boundaries
+
+`pnpm portal validate` enforces D-05 for shared packages and layers. It checks
+manifest dependencies, explicit script imports and Vue external block `src`
+attributes (template, script, styles and custom blocks). Relative/absolute paths,
+file URLs, application package names and app-relative Nuxt aliases are checked.
+Vue sources are parsed with a direct, exact-pinned `@vue/compiler-sfc` dependency;
+malformed SFCs fail validation. The external-block scan skips generated output
+and dependency directories, and does not follow symlinked source trees.
+
+This is partial static enforcement. Nuxt auto-imports, config strings, imports
+inside stylesheet bodies, glob/computed references and portal-ID branching
+still need review. A green validation result does not prove their absence.
+
 ## CMD development output
 
 Use `pnpm portal dev cmd` to start CMD. Its app script selects the `portalDev`

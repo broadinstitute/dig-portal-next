@@ -118,6 +118,9 @@ importers:
       '@dig-portal/content':
         specifier: workspace:*
         version: link:../../packages/content
+      '@vue/compiler-sfc':
+        specifier: 3.5.45
+        version: 3.5.45
       cross-spawn:
         specifier: 7.0.6
         version: 7.0.6
