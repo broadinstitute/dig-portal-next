@@ -41,6 +41,24 @@ export interface PortalDataset {
   readonly community: string | null
 }
 
+export interface VariantAssociation {
+  readonly variantId: string
+  readonly phenotype: string
+  readonly ancestry: string
+  readonly chromosome: string
+  readonly position: number
+  readonly reference: string
+  readonly alternate: string
+  readonly rsId: string | null
+  readonly consequence: string | null
+  readonly nearestGenes: readonly string[]
+  readonly pValue: number
+  readonly beta: number | null
+  readonly metaTypes: readonly string[]
+  readonly dataset: string
+  readonly source: string
+}
+
 export interface ProvenanceAncestry {
   readonly id: string
   readonly ancestryId: string

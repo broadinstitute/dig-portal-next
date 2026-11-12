@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient } from '../src/index.ts'
+import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation } from '../src/index.ts'
 
 function fixture(name) {
   return JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'))
@@ -24,6 +24,54 @@ function decodeAssociation(value) {
   }
   return { variantId: value.varId, phenotype: value.phenotype }
 }
+
+test('decodes recorded association annotations, absent fields, binary and quantitative effects', () => {
+  const records = fixture('association-records')
+  const cad = records.cad.map(decodeVariantAssociation)
+  assert.equal(cad[0].phenotype, 'CAD')
+  assert.ok(cad.some(({ metaTypes }) => metaTypes.includes('largest') && !metaTypes.includes('min_p')))
+  assert.ok(cad.some(({ rsId }) => rsId === null))
+  assert.ok(cad.some(({ pValue }) => pValue === Number.MIN_VALUE))
+  assert.equal(decodeVariantAssociation(records.european).ancestry, 'EU')
+  assert.equal(decodeVariantAssociation(records.t2d).beta, -0.143)
+  assert.equal(decodeVariantAssociation(records.quantitative).beta, 0.0591)
+  const optional = { ...records.european, beta: null, dbSNP: null, nearest: null, consequence: null, inMetaTypes: null }
+  assert.deepEqual(decodeVariantAssociation(optional).nearestGenes, [])
+  assert.deepEqual(decodeVariantAssociation(optional).metaTypes, [])
+  assert.equal(decodeVariantAssociation(optional).beta, null)
+  for (const patch of [{ pValue: -1 }, { pValue: 1.1 }, { pValue: NaN }, { beta: Infinity }, { position: 1.5 }, { position: 0 }, { nearest: 'CDKN2B' }, { nearest: [42] }, { inMetaTypes: [] }, { alt: '' }]) {
+    assert.throws(() => decodeVariantAssociation({ ...records.european, ...patch }), BioIndexResponseError)
+  }
+})
+
+test('queries typed phenotype associations with the correct index, cap and cancellation', async () => {
+  const eu = { ...fixture('cad-association'), data: [fixture('association-records').european] }
+  const mock = mockFetch(fixture('cad-association'), eu)
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const { variantAssociations } = client
+  const combined = await variantAssociations('CAD', '', { signal })
+  const european = await variantAssociations('CAD', 'EU', { limit: 25, signal })
+  assert.equal(mock.calls[0].url, '/bioindex/api/bio/query/global-associations?q=CAD&limit=1000')
+  assert.equal(mock.calls[1].url, '/bioindex/api/bio/query/ancestry-global-associations?q=CAD%2CEU&limit=25')
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  assert.equal(combined.data[0].variantId, '9:22098574:A:G')
+  assert.equal(european.data[0].variantId, '9:22106225:G:A')
+  assert.equal(combined.completeness, 'partial')
+  await assert.rejects(variantAssociations('CAD,EU'), /single phenotype/)
+  await assert.rejects(variantAssociations('CAD', 'EU,CAD'), /ancestry code/)
+})
+
+test('rejects records for another phenotype or ancestry, including continuation pages', async () => {
+  const first = fixture('cad-association')
+  first.continuation = 'next'
+  const wrongTrait = { ...fixture('cad-association'), data: [fixture('association-records').t2d] }
+  const mock = mockFetch(first, wrongTrait, fixture('cad-association'))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  await assert.rejects(client.variantAssociations('CAD'), /invalid record/)
+  assert.ok(mock.calls[1].url.includes('/api/bio/cont?token=next'))
+  await assert.rejects(client.variantAssociations('CAD', 'EU'), /invalid record/)
+})
 
 test('loads recorded bottom-line traits and provenance with cancellation', async () => {
   const recorded = fixture('cad-provenance')

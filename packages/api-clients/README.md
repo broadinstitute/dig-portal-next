@@ -18,6 +18,26 @@ The cap check matters even when all bytes are reported as read: BioIndex can con
 
 The test fixtures are reduced samples of public BioIndex responses; pagination tokens and error responses are simulated.
 
+## Single-variant associations
+
+`variantAssociations(phenotype, ancestry?, options?)` selects
+`global-associations` for the combined results or `ancestry-global-associations`
+for a selected ancestry. It uses a default total limit of 1,000, follows
+continuations, and returns the same explicit completeness information as
+`queryAll`. Reaching that limit is not proof that all records were returned.
+
+The client validates consumed variant/statistic fields and rejects records for
+another phenotype or selected ancestry, including continuation pages. Missing
+optional annotations and effects remain explicitly unavailable. The exported
+`decodeVariantAssociation` can also decode these records in other typed queries.
+Public recorded samples and source endpoints are documented in
+[`association-sources.md`](./test/fixtures/association-sources.md).
+
+```ts
+const result = await client.variantAssociations('CAD', 'EU', { signal, limit: 1000 })
+// Show result.completeness alongside result.data; do not imply exhaustive counts.
+```
+
 ## Bottom-line provenance
 
 `createProvenanceClient` reads the public Translator artifact-provenance service
