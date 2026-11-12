@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation, decodePigeanGeneSupport, decodeHugeGeneScore, decodeFalconGeneProbability, decodePigeanGeneSetEvidence } from '../src/index.ts'
+import { BioIndexHttpError, BioIndexResponseError, createBioIndexClient, createProvenanceClient, decodeVariantAssociation, decodePigeanGeneSupport, decodeHugeGeneScore, decodeFalconGeneProbability, decodePigeanGeneSetEvidence, decodeCs2ctRecord } from '../src/index.ts'
 
 function fixture(name) {
   return JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), 'utf8'))
@@ -24,6 +24,68 @@ function decodeAssociation(value) {
   }
   return { variantId: value.varId, phenotype: value.phenotype }
 }
+
+test('loads CS2CT annotation tuples without inventing a data/count envelope', async () => {
+  const mock = mockFetch(fixture('cs2ct-annotations'), { keys: [['z'], ['a'], ['z']] }, { keys: [['a', 'b']] }, { keys: [[null]] }, { data: [] }, { keys: [], continuation: 'next' })
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  const annotations = await client.cs2ctAnnotations({ signal })
+  assert.ok(annotations.includes('accessible_chromatin'))
+  assert.equal(annotations.length, 5)
+  assert.equal(mock.calls[0].url, '/bioindex/api/bio/keys/c2ct-annotation/2?columns=annotation')
+  assert.equal(mock.calls[0].options.signal, signal)
+  assert.deepEqual(await client.cs2ctAnnotations(), ['a', 'z'])
+  for (let i = 0; i < 4; i++) await assert.rejects(client.cs2ctAnnotations(), BioIndexResponseError)
+})
+
+test('decodes CS2CT statistics while retaining missing names and original identifiers', () => {
+  const raw = fixture('cs2ct-records').european[0]
+  const decoded = decodeCs2ctRecord(raw)
+  assert.equal(decoded.score, raw.Q)
+  assert.equal(decoded.variantCount, raw.varTotal)
+  assert.equal(decoded.overlapProbability, raw.posteriorProbability)
+  assert.equal(decoded.genericity, raw.totalEntropy)
+  assert.equal(decoded.biosample, raw.biosample)
+  assert.equal(decodeCs2ctRecord(fixture('cs2ct-records').negative).score, -0.003709092740890707)
+  const missing = decodeCs2ctRecord({ ...raw, tissue: null, biosample: undefined, overlapLeadSNP: '', varTotal: 0, totalEntropy: 0, Q: 0, posteriorProbability: 0 })
+  assert.deepEqual([missing.tissue, missing.biosample, missing.overlapLeadVariant], [null, null, null])
+  assert.equal(missing.score, 0)
+  for (const patch of [{ Q: NaN }, { totalEntropy: Infinity }, { posteriorProbability: 1.1 }, { varTotal: 1.5 }, { clumpStart: -1 }, { clumpEnd: raw.clumpStart - 1 }, { tissue: 42 }, { dataset: '' }]) {
+    assert.throws(() => decodeCs2ctRecord({ ...raw, ...patch }), BioIndexResponseError)
+  }
+})
+
+test('queries CS2CT with phenotype-first keys, selected annotation and cancellation', async () => {
+  const raw = fixture('cs2ct-records')
+  const envelope = (data) => ({ data, count: data.length, continuation: null, progress: { bytes_read: 100, bytes_total: 100 }, restricted: 0 })
+  const mock = mockFetch(envelope(raw.cad), envelope(raw.european), envelope(raw.t2d))
+  const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+  const signal = new AbortController().signal
+  await client.cs2ct('CAD', '', '', { signal })
+  await client.cs2ct('CAD', 'EU', 'accessible_chromatin', { signal, limit: 25 })
+  await client.cs2ct('T2D', '', 'enhancer', { signal })
+  assert.deepEqual(mock.calls.map(({ url }) => url), [
+    '/bioindex/api/bio/query/c2ct?q=CAD&limit=1000',
+    '/bioindex/api/bio/query/c2ct-annotation?q=CAD%2CEU%2Caccessible_chromatin&limit=25',
+    '/bioindex/api/bio/query/c2ct-annotation?q=T2D%2Cenhancer&limit=1000',
+  ])
+  assert.ok(mock.calls.every(({ options }) => options.signal === signal))
+  await assert.rejects(client.cs2ct('CAD,EU'), TypeError)
+  await assert.rejects(client.cs2ct('CAD', '', 'enhancer,promoter'), TypeError)
+})
+
+test('rejects wrong CS2CT trait, ancestry and annotation on initial and continuation pages', async () => {
+  const row = fixture('cs2ct-records').european[0]
+  const envelope = (data) => ({ data, count: data.length, continuation: null, progress: { bytes_read: 100, bytes_total: 100 }, restricted: 0 })
+  for (const patch of [{ phenotype: 'T2D' }, { ancestry: 'EA' }, { annotation: 'promoter' }]) {
+    const wrong = envelope([{ ...row, ...patch }])
+    const mock = mockFetch(wrong, { ...envelope([row]), continuation: 'next', progress: { bytes_read: 50, bytes_total: 100 } }, wrong)
+    const client = createBioIndexClient({ baseUrl: '/bioindex', fetch: mock.fetch })
+    await assert.rejects(client.cs2ct('CAD', 'EU', 'accessible_chromatin'), BioIndexResponseError)
+    await assert.rejects(client.cs2ct('CAD', 'EU', 'accessible_chromatin'), BioIndexResponseError)
+    assert.match(mock.calls[2].url, /\/cont\?token=next/)
+  }
+})
 
 test('decodes recorded PIGEAN, HuGE, FALCON and gene-set evidence without confusing score units', () => {
   const raw = fixture('gene-support-records')

@@ -1,6 +1,59 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readCs2ctState, cs2ctQuery, cs2ctFilterError, cs2ctEligibleRows, cs2ctLabel, cs2ctTissueKey, missingCs2ctTissue, filterCs2ctRows, sortCs2ctRows, cs2ctCsv, cs2ctVariantRegion } from '../src/index.ts'
 import { ancestryOptions, datasetsForPhenotype, effectorListsForPhenotype, findPhenotype, phenotypeRouteQuery, readPhenotypeRouteState, selectProvenanceAncestry, provenanceHttpUrl, provenanceStages, readAssociationTableState, associationTableQuery, associationPValueError, associationMetaSummary, filterVariantAssociations, sortVariantAssociations, associationPage, formatAssociationPValue, formatAssociationEffect, variantAssociationsCsv, readGeneSupportState, geneSupportQuery, geneSupportRows, geneSupportMinimumError, filterGeneSupportRows, sortGeneSupportRows, geneticSupportCsv, geneSupportPlotPoints, geneSupportEvidence } from '../src/index.ts'
+
+const csRow = (patch = {}) => ({ phenotype: 'CAD', ancestry: 'EU', annotation: 'accessible_chromatin', tissue: 'central_nervous_system', biosample: 'glial_cell', source: 'credible_set', dataset: 'dataset', credibleSetId: 'set1', chromosome: '6', clumpStart: 100, clumpEnd: 201, variantCount: 2, overlapLeadVariant: '6:200:G:A', overlapProbability: 0.9501932626366195, genericity: 1.5, score: 0.65, ...patch })
+
+test('roundtrips CS2CT multi-select query state and normalizes invalid controls', () => {
+  const state = readCs2ctState({ csAnnotation: 'enhancer', csSource: ['credible_set', null, ' credible_set ', 'common'], csTissue: ['blood', '__missing__'], csVariants: '2', csGenericity: '.5', csSort: 'tissue', csOrder: 'asc', csPage: '3' })
+  assert.deepEqual(state.sources, ['credible_set', 'common'])
+  assert.deepEqual(readCs2ctState(cs2ctQuery(state)), state)
+  assert.deepEqual(cs2ctQuery(readCs2ctState({ csSort: 'nonsense', csPage: '-1' })), {})
+  for (const csVariants of ['-1', '2.5', '1e3', 'NaN', '9007199254740992']) assert.ok(cs2ctFilterError(readCs2ctState({ csVariants })))
+  for (const csGenericity of ['-1', 'Infinity', '1e999', '0x10', 'word']) assert.ok(cs2ctFilterError(readCs2ctState({ csGenericity })))
+  assert.equal(cs2ctFilterError(readCs2ctState({ csVariants: '0', csGenericity: '1e-3' })), null)
+})
+
+test('filters CS2CT exact sources and tissues with inclusive bounds and null names', () => {
+  const rows = Object.freeze([Object.freeze(csRow()), Object.freeze(csRow({ source: 'bottom-line_analysis_rare' })), Object.freeze(csRow({ tissue: null, biosample: null, variantCount: 0, genericity: 0, score: 0 })), Object.freeze(csRow({ tissue: 'blood', source: 'common' }))])
+  const eligible = cs2ctEligibleRows(rows)
+  assert.equal(eligible.length, 3)
+  assert.equal(rows.length, 4)
+  assert.equal(cs2ctLabel(rows[0].biosample), 'glial cell')
+  assert.equal(rows[0].biosample, 'glial_cell')
+  assert.equal(cs2ctLabel(null), 'Not recorded')
+  assert.equal(cs2ctTissueKey(rows[2]), missingCs2ctTissue)
+  assert.deepEqual(filterCs2ctRows(eligible, readCs2ctState({ csTissue: ['__missing__'], csVariants: '0', csGenericity: '0' })), [rows[2]])
+  assert.deepEqual(filterCs2ctRows(eligible, readCs2ctState({ csSource: ['credible_set', 'common'], csTissue: ['blood', 'central_nervous_system'], csVariants: '2', csGenericity: '1.5' })), [rows[0], rows[3]])
+  assert.equal(filterCs2ctRows(eligible, readCs2ctState({ csSource: 'credible' })).length, 0)
+  assert.throws(() => filterCs2ctRows(eligible, readCs2ctState({ csVariants: 'bad' })), RangeError)
+})
+
+test('sorts CS2CT numerically and keeps missing labels last without mutating rows', () => {
+  const rows = Object.freeze([csRow({ score: 2, tissue: 'z' }), csRow({ score: 10, tissue: null }), csRow({ score: 1, tissue: 'a' })])
+  assert.deepEqual(sortCs2ctRows(rows, readCs2ctState({})).map((r) => r.score), [10, 2, 1])
+  for (const csOrder of ['asc', 'desc']) assert.equal(sortCs2ctRows(rows, readCs2ctState({ csSort: 'tissue', csOrder })).at(-1).tissue, null)
+  assert.deepEqual(rows.map((r) => r.score), [2, 10, 1])
+})
+
+test('exports every supplied filtered CS2CT row with raw identifiers, precision and CSV escaping', () => {
+  const rows = Array.from({ length: 23 }, (_, i) => csRow({ credibleSetId: `set${i}` }))
+  assert.equal(associationPage(rows, 3, 10).records.length, 3)
+  const csv = cs2ctCsv(rows)
+  assert.equal(csv.trim().split('\r\n').length, 24)
+  assert.match(csv, /glial_cell/)
+  assert.match(csv, /0\.9501932626366195/)
+  const escaped = cs2ctCsv([csRow({ biosample: '=1+1', tissue: 'a,"b"' })])
+  assert.match(escaped, /'=1\+1/)
+  assert.match(escaped, /"a,""b"""/)
+})
+
+test('builds CS2CT Sifter regions from usable same-chromosome variants', () => {
+  assert.equal(cs2ctVariantRegion(csRow()), '6:1-200200')
+  assert.equal(cs2ctVariantRegion(csRow({ overlapLeadVariant: '6:1000000:G:A' })), '6:800000-1200000')
+  for (const overlapLeadVariant of [null, 'rs123', '6:0:G:A', '7:200:G:A', '6:9007199254740992:G:A']) assert.equal(cs2ctVariantRegion(csRow({ overlapLeadVariant })), null)
+})
 
 test('reads legacy phenotype and ancestry query parameters', () => {
   assert.deepEqual(readPhenotypeRouteState({ phenotype: ' CAD ', ancestry: 'EU' }), { phenotype: 'CAD', ancestry: 'EU' })

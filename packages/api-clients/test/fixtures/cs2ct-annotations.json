@@ -1,0 +1,24 @@
+{
+  "profile": {
+    "query": 0.0042918399994960055
+  },
+  "index": "c2ct-annotation",
+  "keys": [
+    [
+      "accessible_chromatin"
+    ],
+    [
+      "binding_sites"
+    ],
+    [
+      "enhancer"
+    ],
+    [
+      "promoter"
+    ],
+    [
+      "uniform_accessible_chromatin_sites"
+    ]
+  ],
+  "nonce": "JfBin2dgKdLmFEghvhVb-fmclWp0nKkYbPgVcHDIop8"
+}

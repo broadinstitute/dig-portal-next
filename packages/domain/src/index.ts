@@ -99,6 +99,25 @@ export interface PigeanGeneSetEvidence extends PigeanModel {
   readonly source: string
 }
 
+export interface Cs2ctRecord {
+  readonly phenotype: string
+  readonly ancestry: string
+  readonly annotation: string
+  readonly tissue: string | null
+  readonly biosample: string | null
+  readonly source: string
+  readonly dataset: string
+  readonly credibleSetId: string
+  readonly chromosome: string
+  readonly clumpStart: number
+  readonly clumpEnd: number
+  readonly variantCount: number
+  readonly overlapLeadVariant: string | null
+  readonly overlapProbability: number
+  readonly genericity: number
+  readonly score: number
+}
+
 export interface ProvenanceAncestry {
   readonly id: string
   readonly ancestryId: string

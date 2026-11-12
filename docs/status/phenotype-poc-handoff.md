@@ -15,6 +15,13 @@ end of a working session with the next actionable steps and verified results.
 
 ## Current state
 
+- **Resume checkpoint:** this session started from clean commit `d1e17f5`,
+  which includes genetic support and the dev Content isolation fix. CS2CT is
+  now implemented in the uncommitted worktree. Top pathways is the next section.
+  The user's port-3000 process (PID 52504 when checked) uses
+  `dev --envName portalDev --host 127.0.0.1 --no-fork`; preserve it. Its catalog
+  dump returned HTTP 200 / 9,608 bytes after CMD typecheck and a static build.
+  No new dependencies or architecture decisions were introduced.
 - **Latest fix:** the user reported an effector catalog load failure after
   validation ran alongside their dev server. Its dump endpoint returned empty
   HTTP 204 because prepare/typecheck rewrote `.nuxt/content` with a prepare-only
@@ -25,20 +32,19 @@ end of a working session with the next actionable steps and verified results.
   server needs one restart through `pnpm portal dev cmd --host 127.0.0.1 --no-fork`
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
-- The working branch is `feature/phenotype-poc`; HEAD at resume is `8573f17`
-  (the committed single-variant association slice). Genetic-support tabs and
-  on-demand gene-set evidence are now implemented in the uncommitted worktree.
+- The working branch is `feature/phenotype-poc`; HEAD at resume is `d1e17f5`.
+  Genetic-support tabs, gene-set evidence and the dev-output fix are committed;
+  CS2CT, its tests/fixtures, and these status updates are uncommitted.
 - The current on-disk files are the baseline. The architect asked to assume
   the changes shown in an older, stale VS Code review are already present;
   do not reconstruct or undo that review without new evidence.
-- The worktree was clean at this resume. Earlier work was committed in
-  `8573f17`. Check `git status --short --branch` again and preserve unrelated or
-  concurrent edits. The genetic-support slice adds no dependencies or lockfile
-  changes. Its model settings live in `portal.config.ts` (sigma 2,
+- The worktree was clean at this resume. Check `git status --short --branch`
+  again and preserve unrelated or concurrent edits. The current slice adds no
+  dependencies or lockfile changes. Genetic-support model settings live in `portal.config.ts` (sigma 2,
   `mouse_msigdb`) per D-21.
 - [The CMD phenotype page](../../apps/cmd/app/pages/phenotype.vue) supports
   `/phenotype?phenotype=CAD` and optional `ancestry`, phenotype selection,
-  plots, single-variant associations, genetic-support tabs, a phenotype/ancestry-filtered dataset table, and
+  plots, single-variant associations, genetic-support tabs, CS2CT, a phenotype/ancestry-filtered dataset table, and
   [effector-gene lists](../../apps/cmd/app/components/EffectorGeneLists.vue).
   A static `phenotype.html` redirect preserves legacy queries and fragments.
 - [The association section](../../apps/cmd/app/components/PhenotypeAssociations.vue)
@@ -51,6 +57,32 @@ end of a working session with the next actionable steps and verified results.
   `assocSort`, `assocOrder`, `assocPage`, and `assocPageSize` query parameters.
   Updates preserve other parameters and the hash. Parent phenotype/ancestry
   selectors reset table state. Region/gene/variant links open the legacy portal.
+- [CS2CT](../../apps/cmd/app/components/PhenotypeCs2ct.vue) offers annotation
+  selection, multiple source/tissue filters, minimum variant count, maximum
+  genericity, sorting, ten-row pages and CSV of all filtered/sorted rows.
+  [The table](../../apps/cmd/app/components/Cs2ctResultsTable.vue) retains the
+  raw identifiers for links/export, formats labels without mutating records,
+  and renders null tissue/biosample names as “Not recorded.” The exact source
+  `bottom-line_analysis_rare` is excluded, matching the legacy rule; counts and
+  exports explicitly describe the remaining returned records.
+  Query keys are `csAnnotation`, `csSource`, `csTissue`, `csVariants`,
+  `csGenericity`, `csSort`, `csOrder`, `csPage`. Source/tissue use repeated query
+  values; missing tissue uses `__missing__`. Changes preserve other sections'
+  parameters/hash and reset the page. Parent trait/ancestry changes reset state.
+  Annotation changes clear source/tissue selections. Tissue/variant/Sifter links
+  open the legacy portal; Sifter uses the overlap SNP ±200 kb, clipped at 1.
+- CS2CT clients use verified keys `phenotype[,ancestry]` for `c2ct`, and
+  `phenotype[,ancestry],annotation` for `c2ct-annotation`. The legacy phenotype
+  store reverses trait/ancestry, yielding zero rows for `EU,CAD,…`; the new
+  client correctly sends `CAD,EU,…`. Annotation discovery uses
+  `/api/bio/keys/c2ct-annotation/2?columns=annotation` and its `keys` tuple
+  envelope (no `data`/`count`). The five verified annotations are
+  `accessible_chromatin`, `binding_sites`, `enhancer`, `promoter`,
+  `uniform_accessible_chromatin_sites`. Do not impose a nonnegative bound on
+  Q: valid live combined scores are negative. Probability, count, interval,
+  finite-number and per-page trait/ancestry/annotation guards remain enforced.
+  The default cap is 1,000 returned records; partial/unknown coverage and
+  restricted records are shown, independently of local filters/source exclusion.
 - Typed association decoding rejects malformed statistics and wrong-trait or
   wrong-ancestry records, including continuation pages. The UI warns when
   completeness is partial/unknown. Counts and CSV never imply exhaustive data
@@ -90,7 +122,7 @@ end of a working session with the next actionable steps and verified results.
 - [Headless phenotype logic](../../packages/feature-phenotype/src/index.ts)
   handles route state, ancestry options, exact trait matching, and dataset
   filtering, plus association filtering/sorting/pagination/formatting/CSV and
-  provenance lineage and genetic-support joins/plots/CSV. The imported Nuxt Content catalog contains one CAD list and eight
+  provenance lineage, genetic-support joins/plots/CSV and CS2CT controls/CSV. The imported Nuxt Content catalog contains one CAD list and eight
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
@@ -98,9 +130,13 @@ end of a working session with the next actionable steps and verified results.
 The following passed with the phenotype changes in the worktree on
 2026-11-11: `pnpm portal validate`, shared `pnpm portal typecheck`, `pnpm portal test`,
 `pnpm portal typecheck cmd`, `pnpm portal build cmd`, and
-`pnpm portal test cmd`. The shared tests included 19 CLI, 20 API-client,
-2 content, and 21 phenotype-feature tests (62 total); the genetic-support CMD
-run had 6 tests. The catalog fix adds a seventh CMD test. The
+`pnpm portal test cmd`. Before CS2CT, the shared tests included 19 CLI,
+20 API-client, 2 content, and 21 phenotype-feature tests (62 total), and the
+catalog fix brought CMD to seven tests. The current CS2CT run passed validation,
+shared/CMD typechecks and 71 shared tests (19 CLI, 24 API-client, 2 content,
+26 phenotype-feature). After live data exposed signed Q values, the decoder
+was corrected and all 24 API tests passed again. The final static build and
+all seven CMD tests also passed. `git diff --check` passed. The
 workspace suite needed command-scoped `GIT_CONFIG_COUNT=1`,
 `GIT_CONFIG_KEY_0=commit.gpgsign`, `GIT_CONFIG_VALUE_0=false` so temporary Git
 fixture commits did not inherit user signing; the plain command failed in GPG.
@@ -114,10 +150,12 @@ showed both scan candidates; the original test and reporter were not modified.
 The cause remains unknown. Do not treat the earlier green run as proof that
 this gate is reliable; investigate before merge. The association-slice run passed
 all six CMD tests; the genetic-support run also passed six. No reporter/test
-fix was made and the earlier cause is unresolved.
+fix was made and the earlier cause is unresolved. This session's seven CMD tests
+passed, including the unchanged layer-shadow regression; this does not resolve
+its earlier intermittent failure.
 
 Earlier offline Vue rendering covered datasets and effector-list integration.
-This session's offline rendering covered the provenance graph shell, stage
+Previous offline rendering covered the provenance graph shell, stage
 table, JSON, loading, empty/error, exact-selection, link, and escaped-text
 states. The ignored `.data/verify-provenance.mjs` script can reproduce that
 offline check in this worktree; it is not a substitute for browser tests.
@@ -125,7 +163,7 @@ The typed client also decoded all 1,529 live traits and CAD/T2D `Mixed`/`EU`
 graphs. CAD/Mixed and T2D/EU summary-statistics HEAD requests returned 200,
 and the trait-list service sent `Access-Control-Allow-Origin: *` for localhost.
 
-This session's `.data/verify-associations.mjs` offline check passed table/summary
+The `.data/verify-associations.mjs` offline check passed table/summary
 rendering, URL update events (without refetching), pagination, binary/quantitative
 effects, missing/partial/loading/empty/error states, encoded links, escaped text,
 and the actual CSV event handler against a simulated document. A 27-record export
@@ -136,7 +174,7 @@ Live typed-client queries returned CAD 598/complete, CAD/EU 337/complete, T2D
 include every CAD meta-analysis combination; `bottom-line;largest` is present
 and is omitted by the legacy summary, so the replacement counts all combinations.
 
-This session's `.data/verify-gene-support.mjs` offline rendering passed all four
+The `.data/verify-gene-support.mjs` offline rendering passed all four
 plots/tables, URL events without refetching, independent source failures,
 coverage warnings, invalid filters, pagination, the actual 23-row CSV event
 from a three-row page against a simulated document, gene-set details, empty/
@@ -148,7 +186,23 @@ Live typed clients decoded CAD and T2D at the configured caps: each had 1,000
 PIGEAN/partial, 1,000 HuGE/partial and 2,000 FALCON/partial. CAD/LDLR gene-set
 evidence returned 100/complete.
 
-The dataset, effector, provenance, association, and genetic-support sections have **not** been verified in
+The new `.data/verify-cs2ct.mjs` offline check passed table/links, rare-source
+exclusion, multi-select URL events preserving other sections/hash, annotation
+selection, metadata/data loading/error/empty states, unknown annotations, null
+names, completeness/restricted warnings, invalid filters, pagination, escaped
+service text and an actual 23-row CSV handler from a three-row page against a
+simulated document. These ignored `.data` scripts are local aids, not committed
+tests or browser validation. Committed API/headless tests cover these contracts.
+Live typed queries returned CAD/accessibility 1,000/partial (713 eligible),
+CAD/EU/accessibility 1,000/partial (995 eligible), T2D/enhancer 1,000/partial
+(739 eligible), and CAD/GME/accessibility 0/complete, all with zero restricted
+records. See [recorded sources](../../packages/api-clients/test/fixtures/cs2ct-sources.md).
+Source references are legacy `src/components/C2ctTable.vue`,
+`src/views/Phenotype/{Template.vue,store.js,main.js}` and Tissue template in
+the local legacy checkout. The initial Q positivity assumption failed on CAD
+record 243; its unchanged negative-score record is now a regression fixture.
+
+The dataset, effector, provenance, association, genetic-support and CS2CT sections have **not** been verified in
 a real browser. The architect explicitly authorized localhost HTTP and
 browser checks during this session; that authorization persists. An initial
 forked-server probe timed out; after a restart using `--no-fork`, the
@@ -156,9 +210,9 @@ phenotype route returned HTTP 200. The underlying timeout cause is unknown.
 The temporary server was stopped. Computer use ended because it could not
 reliably determine the browser URL to enforce its access policy; browser
 checks must wait for a working authorized browser surface.
-The latest inventory still returned no browsers and `The browser access host is
-unavailable`. No native-browser retry or preview server was started by the agent
-this session. Preserve any server the user starts independently.
+The most recent prior-session inventory returned no browsers and `The browser
+access host is unavailable`. No native-browser retry or preview server was
+started by the agent this session. Preserve the user's isolated port-3000 server.
 
 The current static build includes uncommitted work and is not a release
 artifact. The renderer is dynamically imported, but the build warns about a
@@ -167,7 +221,10 @@ unmeasured, particularly for T2D/Mixed (315 activities).
 
 ## Resume in this order
 
-0. Confirm the user has restarted any pre-fix dev server to load `portalDev`.
+0. Keep using the CLI dev command so the server selects `portalDev`:
+   `pnpm portal dev cmd --host 127.0.0.1 --no-fork`.
+   The user's current server already uses this environment; do not restart it
+   merely because the earlier catalog-fix log says a restart was needed.
    The isolation regression passed for real prepare and typecheck with an
    ambient development NODE_ENV. Its old-directory counterfactual failed on
    `prepare overwrote live manifest.ts`. A temporary port-3002 dev server
@@ -178,26 +235,26 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Workspace validation, CMD typecheck, static build and all seven CMD tests
    passed for this fix. The temporary port-3002 server was stopped; the
    user-owned port-3000 process was left running. Its watched configuration
-   reload restored HTTP 200 catalog data (112 entries, CAD 1, T2D 8). It still
-   needs the one-time command restart to select the isolated environment.
+   reload restored HTTP 200 catalog data (112 entries, CAD 1, T2D 8). It
+   has since been restarted into the isolated environment, verified this session.
 1. Review the worktree without discarding changes. When browser access is
-   working, start `pnpm portal dev cmd --host 127.0.0.1 --no-fork` and check
-   datasets, effector lists, provenance, associations and genetic support for CAD, T2D, ancestry, empty,
+   working, use the existing server or start the CLI command above and check
+   datasets, effector lists, provenance, associations, genetic support and CS2CT for CAD, T2D, ancestry, empty,
    and error states. Also check modal focus/closing, graph/table/JSON switching,
    keyboard navigation, graph mount/unmount, association URL back/forward,
    filtering/sorting/paging, all four support tabs and gene-set details, partial-result
-   warnings, SVG performance and real CSV downloads. The successful local HTTP
+   warnings, SVG performance, CS2CT annotation/multi-select controls, missing-name
+   rows, negative scores, Sifter links and real CSV downloads. The successful local HTTP
    check used a session-only `NUXT_PUBLIC_BIOINDEX_URL=https://bioindex-ext.hugeamp.org`.
    Stop temporary servers started by the agent afterward; leave user-owned servers
    running. Verify CORS and Cloudflare on the hosted preview
    separately; localhost success does not establish hosted behavior.
-2. Continue the [section plan](./phenotype-poc.md#section-plan) with CS2CT, which
-   is also shared with the legacy Tissue page. Inspect the legacy phenotype
-   template/store and CS2CT components, then verify `c2ct` / `c2ct-annotation`
-   keys and real records before adding typed decoders. The earlier legacy
-   null-name initialization failure needs explicit loading/empty/error handling.
-   Top pathways, genetic correlations, globally enriched annotations and the
-   deferred CFDE link card remain later sections. Reuse the typed clients and
+2. Continue the [section plan](./phenotype-poc.md#section-plan) with **Top
+   pathways**, then genetic correlations, globally enriched annotations and
+   the deferred CFDE link card. Inspect the legacy template/store/components
+   and verify live index discovery, key ordering, score meanings and sample
+   records before adding decoders. CS2CT is implemented; do not repeat it or
+   copy the old ancestry-first key ordering. Reuse the typed clients and
    headless logic already available; keep regional plots/factors deferred.
 3. Keep the agreed deferral rule: a significant rewrite used on only this
    page stays on the legacy portal and gets a link card. Finish the remaining

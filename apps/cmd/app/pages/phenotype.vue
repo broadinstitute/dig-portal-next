@@ -168,6 +168,7 @@ useHead(() => ({
           <p class="text-sm text-muted">Explore the genetic factors underlying this phenotype on the legacy portal.</p>
           <a :href="legacyPhenotypeLink(phenotype.name)" class="text-primary underline">View genetic factors</a>
         </section>
+        <PhenotypeCs2ct v-if="!unknownAncestry" :key="`cs2ct:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :ancestry="state.ancestry" />
         <section class="mt-10 space-y-4" aria-labelledby="associated-datasets-heading">
           <div class="space-y-1">
             <h2 id="associated-datasets-heading" class="text-xl font-semibold">Datasets with associations</h2>

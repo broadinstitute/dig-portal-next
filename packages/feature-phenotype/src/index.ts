@@ -1,4 +1,4 @@
-import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability } from '@dig-portal/domain'
+import { ancestryLabel, type Phenotype, type PortalDataset, type ProvenanceGraph, type ProvenanceNode, type ProvenanceTrait, type VariantAssociation, type PigeanGeneSupport, type HugeGeneScore, type FalconGeneProbability, type Cs2ctRecord } from '@dig-portal/domain'
 
 export interface PhenotypeRouteState {
   readonly phenotype: string | null
@@ -435,4 +435,80 @@ export function geneSupportEvidence(value: number | null): string {
 
 export function formatGeneSupport(value: number | null): string {
   return value === null ? 'Not returned' : String(Number(value.toPrecision(4)))
+}
+
+export type Cs2ctSort = 'score' | 'overlapProbability' | 'genericity' | 'variantCount' | 'tissue' | 'biosample' | 'source'
+export interface Cs2ctState {
+  readonly annotation: string
+  readonly sources: readonly string[]
+  readonly tissues: readonly string[]
+  readonly minVariants: string
+  readonly maxGenericity: string
+  readonly sort: Cs2ctSort
+  readonly order: 'asc' | 'desc'
+  readonly page: number
+}
+export const cs2ctQueryKeys = ['csAnnotation', 'csSource', 'csTissue', 'csVariants', 'csGenericity', 'csSort', 'csOrder', 'csPage'] as const
+export const missingCs2ctTissue = '__missing__'
+export const cs2ctTissueKey = (row: Cs2ctRecord) => row.tissue ?? missingCs2ctTissue
+export const cs2ctLabel = (value: string | null) => value === null || value === missingCs2ctTissue ? 'Not recorded' : value.replaceAll('_', ' ')
+
+export function readCs2ctState(query: Readonly<Record<string, unknown>>): Cs2ctState {
+  const list = (value: unknown) => [...new Set((Array.isArray(value) ? value : [value]).flatMap((v) => typeof v === 'string' && v.trim() ? [v.trim()] : []))]
+  const sort = firstQueryValue(query.csSort)
+  const allowed = ['score', 'overlapProbability', 'genericity', 'variantCount', 'tissue', 'biosample', 'source']
+  const page = Number(firstQueryValue(query.csPage))
+  return {
+    annotation: firstQueryValue(query.csAnnotation) ?? '', sources: list(query.csSource), tissues: list(query.csTissue),
+    minVariants: firstQueryValue(query.csVariants) ?? '', maxGenericity: firstQueryValue(query.csGenericity) ?? '',
+    sort: sort && allowed.includes(sort) ? sort as Cs2ctSort : 'score', order: firstQueryValue(query.csOrder) === 'asc' ? 'asc' : 'desc',
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
+  }
+}
+
+export function cs2ctQuery(state: Cs2ctState): Record<string, string | string[]> {
+  return {
+    ...(state.annotation ? { csAnnotation: state.annotation } : {}), ...(state.sources.length ? { csSource: [...state.sources] } : {}),
+    ...(state.tissues.length ? { csTissue: [...state.tissues] } : {}), ...(state.minVariants ? { csVariants: state.minVariants } : {}),
+    ...(state.maxGenericity ? { csGenericity: state.maxGenericity } : {}), ...(state.sort !== 'score' ? { csSort: state.sort } : {}),
+    ...(state.order !== 'desc' ? { csOrder: state.order } : {}), ...(state.page !== 1 ? { csPage: String(state.page) } : {}),
+  }
+}
+
+export function cs2ctFilterError(state: Cs2ctState): string | null {
+  if (state.minVariants && (!/^\d+$/.test(state.minVariants) || !Number.isSafeInteger(Number(state.minVariants)))) return 'Minimum variants must be a nonnegative integer.'
+  if (state.maxGenericity && (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(state.maxGenericity) || !Number.isFinite(Number(state.maxGenericity)))) return 'Maximum genericity must be a finite nonnegative number.'
+  return null
+}
+
+export function cs2ctEligibleRows(rows: readonly Cs2ctRecord[]): Cs2ctRecord[] {
+  return rows.filter(({ source }) => source !== 'bottom-line_analysis_rare')
+}
+
+export function filterCs2ctRows(rows: readonly Cs2ctRecord[], state: Cs2ctState): Cs2ctRecord[] {
+  const error = cs2ctFilterError(state)
+  if (error) throw new RangeError(error)
+  return rows.filter((row) => (!state.sources.length || state.sources.includes(row.source)) && (!state.tissues.length || state.tissues.includes(cs2ctTissueKey(row)))
+    && (!state.minVariants || row.variantCount >= Number(state.minVariants)) && (!state.maxGenericity || row.genericity <= Number(state.maxGenericity)))
+}
+
+export function sortCs2ctRows(rows: readonly Cs2ctRecord[], state: Cs2ctState): Cs2ctRecord[] {
+  return rows.slice().sort((a, b) => {
+    const av = a[state.sort], bv = b[state.sort]
+    if (av === null || bv === null) { if (av !== bv) return av === null ? 1 : -1 }
+    const comparison = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av ?? '').localeCompare(String(bv ?? ''))
+    return (state.order === 'asc' ? comparison : -comparison) || a.credibleSetId.localeCompare(b.credibleSetId) || String(a.biosample).localeCompare(String(b.biosample))
+  })
+}
+
+export function cs2ctVariantRegion(row: Cs2ctRecord): string | null {
+  const match = row.overlapLeadVariant?.match(/^([^:]+):(\d+)(?::|$)/)
+  if (!match || match[1] !== row.chromosome) return null
+  const position = Number(match[2])
+  return Number.isSafeInteger(position) && position > 0 ? `${row.chromosome}:${Math.max(1, position - 200000)}-${Math.min(Number.MAX_SAFE_INTEGER, position + 200000)}` : null
+}
+
+export function cs2ctCsv(rows: readonly Cs2ctRecord[]): string {
+  return encodeCsv(['phenotype', 'ancestry', 'annotation', 'tissue', 'biosample', 'source', 'dataset', 'credibleSetId', 'chromosome', 'clumpStart', 'clumpEnd', 'variants', 'overlapLeadVariant', 'overlapProbability', 'genericity', 'combinedScore'],
+    rows.map((r) => [r.phenotype, r.ancestry, r.annotation, r.tissue, r.biosample, r.source, r.dataset, r.credibleSetId, r.chromosome, r.clumpStart, r.clumpEnd, r.variantCount, r.overlapLeadVariant, r.overlapProbability, r.genericity, r.score]))
 }

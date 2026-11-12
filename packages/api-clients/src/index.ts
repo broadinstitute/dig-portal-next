@@ -1,4 +1,4 @@
-import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence } from '@dig-portal/domain'
+import type { BottomLineProvenance, Phenotype, PortalDataset, ProvenanceEdge, ProvenanceNode, ProvenanceTrait, VariantAssociation, PigeanModel, PigeanGeneSupport, HugeGeneScore, FalconGeneProbability, PigeanGeneSetEvidence, Cs2ctRecord } from '@dig-portal/domain'
 
 export type BioIndexDecoder<T> = (value: unknown) => T
 
@@ -300,6 +300,26 @@ function supportKey(value: string): string {
   return value
 }
 
+export function decodeCs2ctRecord(value: unknown): Cs2ctRecord {
+  const row = supportRecord(value)
+  const clumpStart = supportNumber(row.clumpStart), clumpEnd = supportNumber(row.clumpEnd)
+  const variantCount = supportNumber(row.varTotal), overlapProbability = supportNumber(row.posteriorProbability)
+  const genericity = supportNumber(row.totalEntropy), score = supportNumber(row.Q)
+  if (!Number.isSafeInteger(clumpStart) || clumpStart < 0 || !Number.isSafeInteger(clumpEnd) || clumpEnd < clumpStart
+    || !Number.isSafeInteger(variantCount) || variantCount < 0 || overlapProbability < 0 || overlapProbability > 1 || genericity < 0) {
+    throw new BioIndexResponseError('Invalid CS2CT statistics or interval.')
+  }
+  return {
+    phenotype: supportString(row.phenotype), ancestry: supportString(row.ancestry), annotation: supportString(row.annotation),
+    tissue: row.tissue == null || row.tissue === '' ? null : supportString(row.tissue),
+    biosample: row.biosample == null || row.biosample === '' ? null : supportString(row.biosample),
+    source: supportString(row.source), dataset: supportString(row.dataset), credibleSetId: supportString(row.credibleSetId),
+    chromosome: supportString(row.chromosome), clumpStart, clumpEnd, variantCount,
+    overlapLeadVariant: row.overlapLeadSNP == null || row.overlapLeadSNP === '' ? null : supportString(row.overlapLeadSNP),
+    overlapProbability, genericity, score,
+  }
+}
+
 function modelKeys(model: PigeanModel): string {
   if (!model || !Number.isFinite(model.sigma) || model.sigma <= 0) throw new TypeError('A positive PIGEAN sigma is required.')
   return `${model.sigma},${supportKey(model.geneSetCollection)}`
@@ -310,7 +330,7 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
   const fetchRequest = options.fetch ?? globalThis.fetch
   if (typeof fetchRequest !== 'function') throw new TypeError('A fetch implementation is required.')
 
-  async function request(path: string, parameters: URLSearchParams, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  async function requestBody(path: string, parameters: URLSearchParams, signal?: AbortSignal): Promise<Record<string, unknown>> {
     const response = await fetchRequest(`${baseUrl}${path}?${parameters}`, {
       headers: { Accept: 'application/json' },
       signal,
@@ -324,9 +344,15 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
       if (signal?.aborted) throw cause
       throw new BioIndexResponseError(`BioIndex response from ${path} is not valid JSON.`, { cause })
     }
-    if (!isRecord(body) || !Array.isArray(body.data)) {
+    if (!isRecord(body)) {
       throw new BioIndexResponseError(`BioIndex response from ${path} has invalid data.`)
     }
+    return body
+  }
+
+  async function request(path: string, parameters: URLSearchParams, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    const body = await requestBody(path, parameters, signal)
+    if (!Array.isArray(body.data)) throw new BioIndexResponseError(`BioIndex response from ${path} has invalid data.`)
     return body
   }
 
@@ -454,6 +480,25 @@ export function createBioIndexClient(options: BioIndexClientOptions) {
       return queryAll('pigean-joined-gene', keys, (value) => {
         const row = decodePigeanGeneSetEvidence(value)
         if (row.phenotype !== phenotype || row.gene !== gene || row.sigma !== model.sigma || row.geneSetCollection !== model.geneSetCollection) throw new BioIndexResponseError('Gene-set evidence does not match the requested gene and model.')
+        return row
+      }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
+    },
+
+    async cs2ctAnnotations(requestOptions: BioIndexRequestOptions = {}): Promise<readonly string[]> {
+      const body = await requestBody('/api/bio/keys/c2ct-annotation/2', new URLSearchParams({ columns: 'annotation' }), requestOptions.signal)
+      if (!Array.isArray(body.keys) || (body.continuation !== undefined && body.continuation !== null)) throw new BioIndexResponseError('Invalid or incomplete CS2CT annotation keys.')
+      const annotations = body.keys.map((tuple) => {
+        if (!Array.isArray(tuple) || tuple.length !== 1) throw new BioIndexResponseError('Invalid CS2CT annotation tuple.')
+        return supportString(tuple[0])
+      })
+      return [...new Set(annotations)].sort()
+    },
+
+    async cs2ct(phenotype: string, ancestry = '', annotation = '', requestOptions: BioIndexQueryOptions = {}) {
+      const keys = [supportKey(phenotype), ...(ancestry ? [supportKey(ancestry)] : []), ...(annotation ? [supportKey(annotation)] : [])]
+      return queryAll(annotation ? 'c2ct-annotation' : 'c2ct', keys.join(','), (value) => {
+        const row = decodeCs2ctRecord(value)
+        if (row.phenotype !== phenotype || (ancestry && row.ancestry !== ancestry) || (annotation && row.annotation !== annotation)) throw new BioIndexResponseError('CS2CT record does not match the requested phenotype, ancestry and annotation.')
         return row
       }, { ...requestOptions, limit: requestOptions.limit ?? 1000 })
     },
