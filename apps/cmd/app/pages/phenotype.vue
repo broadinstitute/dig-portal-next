@@ -213,6 +213,11 @@ useHead(() => ({
           </div>
         </section>
         <PhenotypePathways v-if="!unknownAncestry" :key="`pathways:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :ancestry="state.ancestry" />
+        <section class="space-y-2 rounded-lg border border-default p-4" aria-labelledby="cfde-gene-sets-heading">
+          <h2 id="cfde-gene-sets-heading" class="text-xl font-semibold">CFDE gene sets</h2>
+          <p class="text-sm text-muted">Explore CFDE gene sets connected to {{ phenotype.description }} on the legacy portal.</p>
+          <a :href="legacyPhenotypeLink(phenotype.name)" class="text-primary underline">View CFDE gene sets</a>
+        </section>
         <PhenotypeGeneticCorrelations v-if="!unknownAncestry" :key="`correlations:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :phenotypes="phenotypes" :ancestry="state.ancestry" />
         <PhenotypeGlobalEnrichments v-if="!unknownAncestry" :key="`enrichments:${JSON.stringify([phenotype.name, state.ancestry])}`" :phenotype="phenotype" :ancestry="state.ancestry" />
         <EffectorGeneLists :phenotype="phenotype.name" />

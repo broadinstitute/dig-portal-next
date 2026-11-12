@@ -17,8 +17,10 @@ end of a working session with the next actionable steps and verified results.
 
 - **Resume checkpoint:** this slice started from clean commit `e89c33d`,
   which includes genetic correlations and all earlier features. Globally
-  enriched annotations is implemented in this checkpoint; the deferred CFDE
-  link card is the next section task. The user now requests a commit after
+  enriched annotations and the deferred CFDE link card are implemented.
+  The planned phenotype sections now have an implementation or legacy link.
+  The next tasks are foundation-gap verification and browser/hosted QA.
+  The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
   returned HTTP 200 / 9,608 bytes on 2026-11-12; preserve that server. Its
@@ -77,6 +79,9 @@ end of a working session with the next actionable steps and verified results.
   URL keys are `enrichAnnotation`, `enrichTissue`, `enrichP`, `enrichFold`,
   `enrichSort`, `enrichOrder`, `enrichPage`; `__missing__` selects a null name.
   Local edits preserve other section query values/hash without refetching.
+- The CFDE section now renders the agreed link card to the selected phenotype
+  on the legacy portal. It uses the existing encoded legacy URL helper and
+  performs no CFDE/dev-host data request, per the section's deferral rule.
 - [Genetic correlations](../../apps/cmd/app/components/PhenotypeGeneticCorrelations.vue)
   uses typed `geneticCorrelations` queries with verified `phenotype[,ancestry]`
   keys and a 1,000-record cap. Existing page phenotype metadata is passed as a
@@ -178,6 +183,11 @@ end of a working session with the next actionable steps and verified results.
   T2D lists; do not use substring matching for trait IDs.
 
 ## Verification at this snapshot
+
+CFDE link-card checkpoint (2026-11-12): CMD typecheck, static build, all seven
+CMD tests and diff checks passed. This small route-only change adds no requests,
+dependencies or new domain logic; shared tests were not repeated. The card and
+handoff are committed together before the next foundation task.
 
 Global-enrichment checkpoint (2026-11-12): typed live CAD returned 1,296 rows
 and T2D 1,512, both complete/unrestricted at limit 2,000. At limit 1,000 both
@@ -353,13 +363,11 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    Stop temporary servers started by the agent afterward; leave user-owned servers
    running. Verify CORS and Cloudflare on the hosted preview
    separately; localhost success does not establish hosted behavior.
-2. Continue the [section plan](./phenotype-poc.md#section-plan) with the deferred
-   **CFDE link card**. The planned data sections are implemented. Inspect the legacy template/store/components
-   and verify live index discovery, key ordering, score meanings and sample
-   records before adding decoders. CS2CT, pathways, genetic correlations and global enrichment
-   are implemented; do not repeat them or
-   copy the old ancestry-first key ordering. Reuse the typed clients and
-   headless logic already available; keep regional plots/factors deferred.
+2. Audit the remaining foundation gaps against actual tooling/CI, then take a
+   bounded enforcement or gate task at a time. The [section plan](./phenotype-poc.md#section-plan)
+   now has implementations or link cards for every planned visible section.
+   Keep regional plots, factors and CFDE deferred. Do not duplicate completed
+   data sections or copy the old CS2CT ancestry-first query order.
 3. Keep the agreed deferral rule: a significant rewrite used on only this
    page stays on the legacy portal and gets a link card. Finish the remaining
    D-05 enforcement and D-31b merge gates before merge, and arrange the hosted
