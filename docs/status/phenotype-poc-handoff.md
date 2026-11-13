@@ -55,6 +55,10 @@ end of a working session with the next actionable steps and verified results.
   explicitly closes on the modal's Escape event. CMD typecheck and all 11 CMD
   tests pass. Browser verification confirmed Escape dismissal and focus return,
   plus 12 forward Tab presses contained and wrapped within the dialog.
+  The first five T2D enhancer rows also produced expected Variant Sifter URLs.
+  A `__missing__` tissue filter returned 0/739, so there was no live null-name
+  row to verify visually; the null-label and invalid-region cases are unit-
+  tested.
   Remaining work is broader interaction/download QA, responsive QA for other
   sections, foundation-gap verification, and hosted QA.
   The user now requests a commit after
@@ -573,8 +577,8 @@ static build is not a release artifact.
    and forward-Tab containment/wrap are now verified. CSV handler anchor
    creation was observed, but actual downloads were not confirmed. Still
    exercise nested modal-control keyboard behavior, graph mount/unmount,
-   remaining partial-result warnings, SVG
-   performance, CS2CT missing-name rows, Sifter links and CSV downloads,
+   remaining partial-result warnings, SVG performance, CS2CT null-name display
+   on a live row if available, and actual CSV downloads,
    pathway/correlation Back/Forward, actual CSV downloads (the integrated
    browser did not report download events), and other empty/error states.
    The T2D genetic-support/CS2CT view now has no
