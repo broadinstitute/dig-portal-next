@@ -43,8 +43,12 @@ end of a working session with the next actionable steps and verified results.
   state are now verified in the browser. T2D association position sorting in
   both directions and paging, pathway Beta sorting/paging, and correlation
   multi-select/threshold/empty-state/sort/page/internal navigation are also
-  verified. Remaining work is broader interaction/download QA, responsive QA
-  for other sections, foundation-gap verification, and hosted QA.
+  verified. The latest T2D global-enrichment check verified p-value/fold
+  filtering (15 matches), ascending Fold sort, page 2 and reset to 63
+  shortlisted rows, preserving the unrelated association filter and sort.
+  Annotation/tissue selection and browser CSV saving remain unverified.
+  Remaining work is broader interaction/download QA, responsive QA for other
+  sections, foundation-gap verification, and hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
