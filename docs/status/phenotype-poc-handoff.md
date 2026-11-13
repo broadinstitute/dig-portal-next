@@ -33,8 +33,10 @@ end of a working session with the next actionable steps and verified results.
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
   The 2026-11-13 browser check now covers CAD and T2D rendering, CAD/EU
-  ancestry filtering, and the CAD/Mixed provenance views. Remaining work is
-  interaction/download QA, foundation-gap verification, and hosted QA.
+  ancestry filtering, the CAD/Mixed provenance views, T2D support-tab state,
+  on-demand gene-set evidence, and a T2D association filter/history roundtrip.
+  Remaining work is broader interaction/download QA, foundation-gap
+  verification, and hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
@@ -489,12 +491,25 @@ modal loaded 88 stages and 121 resources; Graph, the 88-stage Table, and the
 136,705-character JSON view rendered. A desktop screenshot showed the heading,
 selectors, and plots.
 
+All four T2D genetic-support tabs selected and updated `supportTab` in the URL;
+the HuGE, comparison, and direct/indirect values were `huge`, `comparison`, and
+`direct-indirect`, and returning to Combined support removed the parameter.
+Opening TCF7L2 gene-set evidence loaded 114 records. Setting the T2D association
+maximum p-value to `1e-10` updated `assocP` and displayed 778 matches among
+1,000 returned records. Browser Back returned to the previous CAD/EU route and
+Forward restored the filtered T2D URL.
+
 This is rendering and a small set of interaction checks, not complete browser
 QA. Keyboard/focus behavior, modal lifecycle, support-tab controls, filters,
-sorting, back/forward state, real CSV downloads, empty/error states, responsive
-layouts, browser transfer size, and T2D/Mixed graph performance (315 activities)
-remain unverified. Hosted-preview CORS, Cloudflare behavior, and deployment are
-also still open.
+sorting/paging, real CSV downloads, empty/error states, responsive layouts,
+browser transfer size, and T2D/Mixed graph performance (315 activities) remain
+unverified. Playwright download listeners timed out after clicks on both the
+association and genetic-support CSV buttons; no application-level error was
+shown after the association click. The app builds CSV Blobs and clicks
+temporary download anchors, and the CSV helper is unit-tested. The browser
+harness did not confirm whether files were downloaded; verify in a normal
+browser's download list before changing the handler. Hosted-preview CORS,
+Cloudflare behavior, and deployment are also still open.
 
 On `e4f8c97`, workspace validation, shared-package typechecks, CMD typecheck,
 static build, and all 11 CMD tests passed on 2026-11-13. The full shared test
@@ -523,16 +538,17 @@ static build is not a release artifact.
 1. Review the worktree without discarding changes. Continue browser QA using
    the existing server if it is still running; do not restart or stop a
    user-owned server. CAD/T2D rendering, CAD-to-EU URL/data selection, and
-   CAD/Mixed graph/table/JSON rendering have been checked. Still exercise
-   modal focus/closing, keyboard navigation, graph mount/unmount, association
-   URL back/forward and filters/sorting/paging, all four support tabs and
-   gene-set details, partial-result warnings, SVG performance, CS2CT
+   CAD/Mixed graph/table/JSON rendering, all four support tabs, TCF7L2
+   gene-set evidence, and an association p-value filter/history roundtrip
+   have been checked. Still exercise modal focus/closing, keyboard navigation,
+   graph mount/unmount, association sorting/paging, partial-result warnings,
+   SVG performance, CS2CT
    annotation/multi-select controls, missing-name rows, negative scores,
    Sifter links, pathway/correlation sorting/back-forward, correlation
-   multi-select/thresholds/internal links, and real CSV downloads. Also cover
-   empty/error states and responsive layouts. Verify CORS and Cloudflare on
-   the hosted preview separately; localhost success does not establish hosted
-   behavior.
+   multi-select/thresholds/internal links, and real CSV downloads (the
+   integrated browser did not report download events). Also cover empty/error
+   states and responsive layouts. Verify CORS and Cloudflare on the hosted
+   preview separately; localhost success does not establish hosted behavior.
 2. Continue the remaining foundation gaps against actual tooling/CI, then take a
    bounded enforcement or gate task at a time. The [section plan](./phenotype-poc.md#section-plan)
    now has implementations or link cards for every planned visible section.
