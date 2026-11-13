@@ -40,9 +40,11 @@ end of a working session with the next actionable steps and verified results.
   document now fits the 375 px layout width while the result tables retain
   internal horizontal scrolling. T2D CS2CT source/tissue/numeric filters,
   genericity sort/order, pagination, reset and preservation of unrelated URL
-  state are now verified in the browser. Remaining work is broader interaction/
-  download QA, responsive QA for other sections, foundation-gap verification,
-  and hosted QA.
+  state are now verified in the browser. T2D association position sorting in
+  both directions and paging, pathway Beta sorting/paging, and correlation
+  multi-select/threshold/empty-state/sort/page/internal navigation are also
+  verified. Remaining work is broader interaction/download QA, responsive QA
+  for other sections, foundation-gap verification, and hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
@@ -557,12 +559,11 @@ static build is not a release artifact.
    gene-set evidence, and an association p-value filter/history roundtrip
    have been checked. CSV handler anchor creation was observed, but actual
    downloads were not confirmed. Still exercise modal focus/closing, keyboard
-   navigation, graph mount/unmount, association sorting/paging,
-   partial-result warnings, SVG performance, CS2CT missing-name rows, Sifter
-   links and CSV downloads, pathway/correlation sorting/back-forward, correlation
-   multi-select/thresholds/internal links, and real CSV downloads (the
-   integrated browser did not report download events). Also cover empty/error
-   states and responsive layouts. The T2D genetic-support/CS2CT view now has no
+   navigation, graph mount/unmount, remaining partial-result warnings, SVG
+   performance, CS2CT missing-name rows, Sifter links and CSV downloads,
+   pathway/correlation Back/Forward, actual CSV downloads (the integrated
+   browser did not report download events), and other empty/error states.
+   The T2D genetic-support/CS2CT view now has no
    page-level horizontal overflow at 390 px; other sections still need
    responsive checks. Verify CORS and Cloudflare on the hosted
    preview separately; localhost success does not establish hosted behavior.
