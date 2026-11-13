@@ -38,7 +38,9 @@ end of a working session with the next actionable steps and verified results.
   A mobile-width page overflow was traced to absolute `sr-only` labels inside
   table actions and fixed by positioning their links/buttons; at 390 px the
   document now fits the 375 px layout width while the result tables retain
-  internal horizontal scrolling. Remaining work is broader interaction/
+  internal horizontal scrolling. T2D CS2CT source/tissue/numeric filters,
+  genericity sort/order, pagination, reset and preservation of unrelated URL
+  state are now verified in the browser. Remaining work is broader interaction/
   download QA, responsive QA for other sections, foundation-gap verification,
   and hosted QA.
   The user now requests a commit after
@@ -556,9 +558,8 @@ static build is not a release artifact.
    have been checked. CSV handler anchor creation was observed, but actual
    downloads were not confirmed. Still exercise modal focus/closing, keyboard
    navigation, graph mount/unmount, association sorting/paging,
-   partial-result warnings, SVG performance, CS2CT
-   annotation/multi-select controls, missing-name rows, negative scores,
-   Sifter links, pathway/correlation sorting/back-forward, correlation
+   partial-result warnings, SVG performance, CS2CT missing-name rows, Sifter
+   links and CSV downloads, pathway/correlation sorting/back-forward, correlation
    multi-select/thresholds/internal links, and real CSV downloads (the
    integrated browser did not report download events). Also cover empty/error
    states and responsive layouts. The T2D genetic-support/CS2CT view now has no
