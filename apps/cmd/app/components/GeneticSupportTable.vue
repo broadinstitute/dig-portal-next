@@ -46,8 +46,8 @@ const calculatorUrl = (row: GeneSupportRow) => `https://hugeamp.org/hugecalculat
           </template>
           <td v-if="tab === 'combined'" class="p-3 text-right tabular-nums">{{ formatGeneSupport(row.pip) }}</td>
           <td class="p-3">
-            <UButton v-if="tab !== 'huge'" color="neutral" variant="outline" @click="$emit('geneSets', row.gene)">View gene sets<span class="sr-only"> for {{ row.gene }}</span></UButton>
-            <a v-else :href="calculatorUrl(row)" class="text-primary underline">HuGE calculator<span class="sr-only"> for {{ row.gene }}</span></a>
+            <UButton v-if="tab !== 'huge'" color="neutral" variant="outline" class="relative" @click="$emit('geneSets', row.gene)">View gene sets<span class="sr-only"> for {{ row.gene }}</span></UButton>
+            <a v-else :href="calculatorUrl(row)" class="relative text-primary underline">HuGE calculator<span class="sr-only"> for {{ row.gene }}</span></a>
           </td>
         </tr>
       </tbody>

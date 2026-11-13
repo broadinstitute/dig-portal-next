@@ -24,7 +24,7 @@ const sifterUrl = (row: Cs2ctRecord) => `https://hugeamp.org/research.html?${new
           <td class="p-3 text-right tabular-nums">{{ row.variantCount.toLocaleString() }}</td>
           <td class="max-w-60 break-all p-3"><a v-if="row.overlapLeadVariant" :href="variantUrl(row.overlapLeadVariant)" class="text-primary underline">{{ row.overlapLeadVariant }}</a><span v-else>Not recorded</span></td>
           <td class="p-3 text-right tabular-nums">{{ formatGeneSupport(row.overlapProbability) }}</td><td class="p-3 text-right tabular-nums">{{ formatGeneSupport(row.genericity) }}</td><td class="p-3 text-right tabular-nums">{{ formatGeneSupport(row.score) }}</td>
-          <td class="p-3"><a v-if="cs2ctVariantRegion(row)" :href="sifterUrl(row)" class="text-primary underline">Open<span class="sr-only"> Variant Sifter around {{ row.overlapLeadVariant }}</span></a><span v-else>Region unavailable</span></td>
+          <td class="p-3"><a v-if="cs2ctVariantRegion(row)" :href="sifterUrl(row)" class="relative text-primary underline">Open<span class="sr-only"> Variant Sifter around {{ row.overlapLeadVariant }}</span></a><span v-else>Region unavailable</span></td>
         </tr>
       </tbody>
     </table>

@@ -35,8 +35,12 @@ end of a working session with the next actionable steps and verified results.
   The 2026-11-13 browser check now covers CAD and T2D rendering, CAD/EU
   ancestry filtering, the CAD/Mixed provenance views, T2D support-tab state,
   on-demand gene-set evidence, and a T2D association filter/history roundtrip.
-  Remaining work is broader interaction/download QA, foundation-gap
-  verification, and hosted QA.
+  A mobile-width page overflow was traced to absolute `sr-only` labels inside
+  table actions and fixed by positioning their links/buttons; at 390 px the
+  document now fits the 375 px layout width while the result tables retain
+  internal horizontal scrolling. Remaining work is broader interaction/
+  download QA, responsive QA for other sections, foundation-gap verification,
+  and hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
@@ -58,6 +62,15 @@ end of a working session with the next actionable steps and verified results.
   server needs one restart through `pnpm portal dev cmd --host 127.0.0.1 --no-fork`
   to pick up the script; reload the page afterward to clear failed browser
   Content initialization. Keep using the CLI so this environment is selected.
+- **Mobile overflow fix (2026-11-13):** at 390 px, the root scroll width was
+  1,135 px although body/main were 375 px. Absolutely positioned `sr-only`
+  labels inside gene-support and CS2CT result-table actions escaped the
+  horizontal scrollers. Adding `relative` to the action buttons/links fixed the
+  page overflow without removing accessible labels or table scrolling. Browser
+  verification after hot reload measured root client/scroll widths of 375/375;
+  both tables retained nonzero internal horizontal scroll ranges. CMD typecheck
+  and all 11 CMD tests passed. This fix and its status/handoff updates are
+  committed together.
 - The working branch is `feature/phenotype-poc`; the implementation baseline
   for this task was clean `2935028`. Workspace layer graph checks, their tests
   and this handoff are committed as one task. Check current HEAD/status rather than interpreting
@@ -548,7 +561,9 @@ static build is not a release artifact.
    Sifter links, pathway/correlation sorting/back-forward, correlation
    multi-select/thresholds/internal links, and real CSV downloads (the
    integrated browser did not report download events). Also cover empty/error
-   states and responsive layouts. Verify CORS and Cloudflare on the hosted
+   states and responsive layouts. The T2D genetic-support/CS2CT view now has no
+   page-level horizontal overflow at 390 px; other sections still need
+   responsive checks. Verify CORS and Cloudflare on the hosted
    preview separately; localhost success does not establish hosted behavior.
 2. Continue the remaining foundation gaps against actual tooling/CI, then take a
    bounded enforcement or gate task at a time. The [section plan](./phenotype-poc.md#section-plan)
