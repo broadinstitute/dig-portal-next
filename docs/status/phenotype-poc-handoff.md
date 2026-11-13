@@ -50,7 +50,11 @@ end of a working session with the next actionable steps and verified results.
   The T2D ancestry selector also updated the route to `ancestry=EU` and filtered
   75 dataset rows to 30 European-only rows. At 390 px, all seven T2D data tables
   scrolled internally without causing document-level overflow. The browser has
-  been restored to `?phenotype=T2D&assocP=1e-10&enrichSort=fold`.
+  been restored to `?phenotype=T2D&assocP=1e-10&enrichSort=fold`. A CAD/Mixed
+  provenance check found that Escape did not dismiss the modal; the page now
+  explicitly closes on the modal's Escape event. CMD typecheck and all 11 CMD
+  tests pass. Browser verification confirmed Escape dismissal and focus return,
+  plus 12 forward Tab presses contained and wrapped within the dialog.
   Remaining work is broader interaction/download QA, responsive QA for other
   sections, foundation-gap verification, and hosted QA.
   The user now requests a commit after
@@ -565,9 +569,11 @@ static build is not a release artifact.
    user-owned server. CAD/T2D rendering, CAD-to-EU URL/data selection, and
    CAD/Mixed graph/table/JSON rendering, all four support tabs, TCF7L2
    gene-set evidence, and an association p-value filter/history roundtrip
-   have been checked. CSV handler anchor creation was observed, but actual
-   downloads were not confirmed. Still exercise modal focus/closing, keyboard
-   navigation, graph mount/unmount, remaining partial-result warnings, SVG
+   have been checked. The provenance modal's Escape dismissal, focus return,
+   and forward-Tab containment/wrap are now verified. CSV handler anchor
+   creation was observed, but actual downloads were not confirmed. Still
+   exercise nested modal-control keyboard behavior, graph mount/unmount,
+   remaining partial-result warnings, SVG
    performance, CS2CT missing-name rows, Sifter links and CSV downloads,
    pathway/correlation Back/Forward, actual CSV downloads (the integrated
    browser did not report download events), and other empty/error states.

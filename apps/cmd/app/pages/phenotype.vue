@@ -60,6 +60,7 @@ const failedPlots = ref(new Set<string>())
 const provenanceOpen = ref(false)
 const legacyPhenotypeLink = (name: string) => `https://hugeamp.org/phenotype.html?${new URLSearchParams({ phenotype: name })}`
 watch(() => [state.value.phenotype, state.value.ancestry], () => { provenanceOpen.value = false })
+function closeProvenanceOnEscape() { provenanceOpen.value = false }
 
 useHead(() => ({
   title: phenotype.value ? `${phenotype.value.description} | ${portal.title}` : `Phenotype | ${portal.title}`,
@@ -155,7 +156,13 @@ useHead(() => ({
             >
           </UCard>
         </section>
-        <UModal v-model:open="provenanceOpen" title="Bottom-line provenance" description="Processing history and summary statistics for the selected phenotype and ancestry." :ui="{ content: 'max-w-6xl' }">
+        <UModal
+          v-model:open="provenanceOpen"
+          title="Bottom-line provenance"
+          description="Processing history and summary statistics for the selected phenotype and ancestry."
+          :content="{ onEscapeKeyDown: closeProvenanceOnEscape }"
+          :ui="{ content: 'max-w-6xl' }"
+        >
           <UButton color="neutral" variant="outline">Provenance &amp; summary statistics</UButton>
           <template #body>
             <BottomLineProvenance v-if="provenanceOpen" :phenotype="phenotype.name" :ancestry="state.ancestry" />
