@@ -1,6 +1,6 @@
 # Handoff: CMD phenotype proof of concept
 
-Snapshot: 2026-11-12. Verify the branch, worktree, and validation results before
+Snapshot: 2026-11-13. Verify the branch, worktree, and validation results before
 resuming; this is a handoff, not an architecture decision record.
 
 ## Read first
@@ -32,7 +32,9 @@ end of a working session with the next actionable steps and verified results.
   A bounded audit of
   the historical layer-shadow failure followed: eight isolated runs passed,
   with no reporter or test change and no claim that the intermittency is fixed.
-  The next tasks are foundation-gap verification and browser/hosted QA.
+  The 2026-11-13 browser check now covers CAD and T2D rendering, CAD/EU
+  ancestry filtering, and the CAD/Mixed provenance views. Remaining work is
+  interaction/download QA, foundation-gap verification, and hosted QA.
   The user now requests a commit after
   every completed task, with validation and handoff updates before moving on.
   The existing port-3000 server's catalog
@@ -476,24 +478,29 @@ Source references are legacy `src/components/C2ctTable.vue`,
 the local legacy checkout. The initial Q positivity assumption failed on CAD
 record 243; its unchanged negative-score record is now a regression fixture.
 
-The dataset, effector, provenance, association, genetic-support, CS2CT, pathway
-genetic-correlation and global-enrichment sections have **not** been verified in
-a real browser. The architect explicitly authorized localhost HTTP and
-browser checks during this session; that authorization persists. An initial
-forked-server probe timed out; after a restart using `--no-fork`, the
-phenotype route returned HTTP 200. The underlying timeout cause is unknown.
-The temporary server was stopped. Computer use ended because it could not
-reliably determine the browser URL to enforce its access policy; browser
-checks must wait for a working authorized browser surface.
-The latest inventory (2026-11-12) returned no browsers and `The browser
-access host is unavailable`. No native-browser retry or preview server was
-started by the agent this session. Preserve the user's isolated port-3000 server.
+Browser QA on 2026-11-13 used the existing user-owned
+`http://127.0.0.1:3000` server; it was not restarted or stopped. The CAD page
+rendered plots, association rows, genetic support, CS2CT, datasets, pathways,
+correlations, global enrichment, and an effector list. Selecting European
+ancestry changed the URL to `ancestry=EU`, showed European datasets, and loaded
+337 association records (10 visible on the first page). T2D rendered with its
+plots, 75 dataset rows, and eight effector lists. The CAD/Mixed provenance
+modal loaded 88 stages and 121 resources; Graph, the 88-stage Table, and the
+136,705-character JSON view rendered. A desktop screenshot showed the heading,
+selectors, and plots.
 
-The latest static build passed for the CMD base-schema checkpoint, before that
-task's commit; it is not a release artifact. Later tooling-only checks do not
-regenerate portal output. The renderer is dynamically imported, but the build warns about a
-client chunk exceeding 500 kB. Browser transfer and graph performance remain
-unmeasured, particularly for T2D/Mixed (315 activities).
+This is rendering and a small set of interaction checks, not complete browser
+QA. Keyboard/focus behavior, modal lifecycle, support-tab controls, filters,
+sorting, back/forward state, real CSV downloads, empty/error states, responsive
+layouts, browser transfer size, and T2D/Mixed graph performance (315 activities)
+remain unverified. Hosted-preview CORS, Cloudflare behavior, and deployment are
+also still open.
+
+On `e4f8c97`, workspace validation, shared-package typechecks, CMD typecheck,
+static build, and all 11 CMD tests passed on 2026-11-13. The full shared test
+suite was not rerun in that check because CLI fixture commits inherit the
+user's Git signing setting; do not disable signing to work around that. The
+static build is not a release artifact.
 
 ## Resume in this order
 
@@ -513,20 +520,19 @@ unmeasured, particularly for T2D/Mixed (315 activities).
    user-owned port-3000 process was left running. Its watched configuration
    reload restored HTTP 200 catalog data (112 entries, CAD 1, T2D 8). It
    has since been restarted into the isolated environment, verified this session.
-1. Review the worktree without discarding changes. When browser access is
-   working, use the existing server or start the CLI command above and check
-   datasets, effector lists, provenance, associations, genetic support, CS2CT,
-   pathways, genetic correlations and global enrichment for CAD, T2D, ancestry, empty,
-   and error states. Also check modal focus/closing, graph/table/JSON switching,
-   keyboard navigation, graph mount/unmount, association URL back/forward,
-   filtering/sorting/paging, all four support tabs and gene-set details, partial-result
-   warnings, SVG performance, CS2CT annotation/multi-select controls, missing-name
-   rows, negative scores, Sifter links, pathway/correlation sorting/back-forward,
-   correlation multi-select/thresholds/internal links and real CSV downloads. The successful local HTTP
-   check used a session-only `NUXT_PUBLIC_BIOINDEX_URL=https://bioindex-ext.hugeamp.org`.
-   Stop temporary servers started by the agent afterward; leave user-owned servers
-   running. Verify CORS and Cloudflare on the hosted preview
-   separately; localhost success does not establish hosted behavior.
+1. Review the worktree without discarding changes. Continue browser QA using
+   the existing server if it is still running; do not restart or stop a
+   user-owned server. CAD/T2D rendering, CAD-to-EU URL/data selection, and
+   CAD/Mixed graph/table/JSON rendering have been checked. Still exercise
+   modal focus/closing, keyboard navigation, graph mount/unmount, association
+   URL back/forward and filters/sorting/paging, all four support tabs and
+   gene-set details, partial-result warnings, SVG performance, CS2CT
+   annotation/multi-select controls, missing-name rows, negative scores,
+   Sifter links, pathway/correlation sorting/back-forward, correlation
+   multi-select/thresholds/internal links, and real CSV downloads. Also cover
+   empty/error states and responsive layouts. Verify CORS and Cloudflare on
+   the hosted preview separately; localhost success does not establish hosted
+   behavior.
 2. Continue the remaining foundation gaps against actual tooling/CI, then take a
    bounded enforcement or gate task at a time. The [section plan](./phenotype-poc.md#section-plan)
    now has implementations or link cards for every planned visible section.
