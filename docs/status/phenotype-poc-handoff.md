@@ -47,6 +47,10 @@ end of a working session with the next actionable steps and verified results.
   filtering (15 matches), ascending Fold sort, page 2 and reset to 63
   shortlisted rows, preserving the unrelated association filter and sort.
   Annotation/tissue selection and browser CSV saving remain unverified.
+  The T2D ancestry selector also updated the route to `ancestry=EU` and filtered
+  75 dataset rows to 30 European-only rows. At 390 px, all seven T2D data tables
+  scrolled internally without causing document-level overflow. The browser has
+  been restored to `?phenotype=T2D&assocP=1e-10&enrichSort=fold`.
   Remaining work is broader interaction/download QA, responsive QA for other
   sections, foundation-gap verification, and hosted QA.
   The user now requests a commit after
