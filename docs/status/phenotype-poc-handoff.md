@@ -57,6 +57,9 @@ end of a working session with the next actionable steps and verified results.
   explicitly closes on the modal's Escape event. CMD typecheck and all 11 CMD
   tests pass. Browser verification confirmed Escape dismissal and focus return,
   plus 12 forward Tab presses contained and wrapped within the dialog.
+  T2D enrichment dropdowns filtered 63 shortlisted rows to 41 for `enhancer`
+  and 2 after adding `blood`; reset restored 63 rows and preserved unrelated
+  state. The browser remains on the T2D association-filter/Fold-sort route.
   The first five T2D enhancer rows also produced expected Variant Sifter URLs.
   A `__missing__` tissue filter returned 0/739, so there was no live null-name
   row to verify visually; the null-label and invalid-region cases are unit-
