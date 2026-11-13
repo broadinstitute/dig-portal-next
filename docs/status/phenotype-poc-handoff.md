@@ -49,7 +49,9 @@ end of a working session with the next actionable steps and verified results.
   Annotation/tissue selection and browser CSV saving remain unverified.
   The T2D ancestry selector also updated the route to `ancestry=EU` and filtered
   75 dataset rows to 30 European-only rows. At 390 px, all seven T2D data tables
-  scrolled internally without causing document-level overflow. The browser has
+  scrolled internally without causing document-level overflow. The same
+  no-overflow/internal-scroll result held at 320 px (305 px layout width); CAD
+  and modal responsive checks remain. The browser has
   been restored to `?phenotype=T2D&assocP=1e-10&enrichSort=fold`. A CAD/Mixed
   provenance check found that Escape did not dismiss the modal; the page now
   explicitly closes on the modal's Escape event. CMD typecheck and all 11 CMD
