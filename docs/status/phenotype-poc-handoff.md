@@ -46,14 +46,18 @@ end of a working session with the next actionable steps and verified results.
   verified. The latest T2D global-enrichment check verified p-value/fold
   filtering (15 matches), ascending Fold sort, page 2 and reset to 63
   shortlisted rows, preserving the unrelated association filter and sort.
-  Annotation/tissue selection and browser CSV saving remain unverified.
+  Annotation/tissue selection also worked: `enhancer` reduced the shortlist
+  from 63 to 41, then tissue `blood` reduced it to 2; reset preserved the
+  unrelated association filter and Fold sort. Browser CSV saving remains
+  unverified.
   The T2D ancestry selector also updated the route to `ancestry=EU` and filtered
   75 dataset rows to 30 European-only rows. At 390 px, all seven T2D data tables
   scrolled internally without causing document-level overflow. The same
-  no-overflow/internal-scroll result held at 320 px (305 px layout width); CAD
-  full-page responsiveness remains. At 320 px the CAD/Mixed provenance dialog
-  fit the viewport and its body scrolled internally without page-level
-  horizontal overflow. The browser has
+  no-overflow/internal-scroll result held at 320 px (305 px layout width) for
+  both T2D and CAD, each with seven internally scrollable tables. At 320 px the
+  CAD/Mixed provenance dialog also fit the viewport and its body scrolled
+  internally without page-level horizontal overflow. Larger-text and other
+  viewport checks remain. The browser has
   been restored to `?phenotype=T2D&assocP=1e-10&enrichSort=fold`. A CAD/Mixed
   provenance check found that Escape did not dismiss the modal; the page now
   explicitly closes on the modal's Escape event. CMD typecheck and all 11 CMD
@@ -585,13 +589,11 @@ static build is not a release artifact.
    creation was observed, but actual downloads were not confirmed. Still
    exercise nested modal-control keyboard behavior, graph mount/unmount,
    remaining partial-result warnings, SVG performance, CS2CT null-name display
-   on a live row if available, and actual CSV downloads,
-   pathway/correlation Back/Forward, actual CSV downloads (the integrated
-   browser did not report download events), and other empty/error states.
-   The T2D genetic-support/CS2CT view now has no
-   page-level horizontal overflow at 390 px; other sections still need
-   responsive checks. Verify CORS and Cloudflare on the hosted
-   preview separately; localhost success does not establish hosted behavior.
+   on a live row if available, pathway/correlation Back/Forward, browser CSV
+   downloads (the integrated browser did not report download events), and
+   other empty/error states. Responsive checks at larger text and additional
+   viewport sizes remain. Verify CORS and Cloudflare on the hosted preview
+   separately; localhost success does not establish hosted behavior.
 2. Continue the remaining foundation gaps against actual tooling/CI, then take a
    bounded enforcement or gate task at a time. The [section plan](./phenotype-poc.md#section-plan)
    now has implementations or link cards for every planned visible section.
