@@ -74,7 +74,7 @@ async function copyJson() {
         <a :href="client.provenanceUrl(detail.id)" class="text-primary underline">Provenance data</a>
       </div>
       <UFormField label="Provenance view">
-        <USelect v-model="view" :items="[{ label: 'Graph', value: 'graph' }, { label: 'Table', value: 'table' }, { label: 'JSON', value: 'json' }]" />
+        <USelect v-model="view" :items="[{ label: 'Graph', value: 'graph' }, { label: 'Table', value: 'table' }, { label: 'JSON', value: 'json' }]" :portal="false" />
       </UFormField>
       <ProvenanceGraph v-if="view === 'graph'" :key="detail.id" :graph="detail.graph" />
       <ProvenanceTable v-else-if="view === 'table'" :key="detail.id" :graph="detail.graph" />
