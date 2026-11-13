@@ -504,12 +504,12 @@ QA. Keyboard/focus behavior, modal lifecycle, support-tab controls, filters,
 sorting/paging, real CSV downloads, empty/error states, responsive layouts,
 browser transfer size, and T2D/Mixed graph performance (315 activities) remain
 unverified. Playwright download listeners timed out after clicks on both the
-association and genetic-support CSV buttons; no application-level error was
-shown after the association click. The app builds CSV Blobs and clicks
-temporary download anchors, and the CSV helper is unit-tested. The browser
-harness did not confirm whether files were downloaded; verify in a normal
-browser's download list before changing the handler. Hosted-preview CORS,
-Cloudflare behavior, and deployment are also still open.
+association and genetic-support CSV buttons. A DOM click probe confirmed the
+association handler clicked a temporary download anchor for a Blob URL named
+`T2D-all-associations.csv`; no application-level error was shown. The CSV
+helper is unit-tested, but actual file saving remains unverified. Check a
+normal browser's download list before changing the handler. Hosted-preview
+CORS, Cloudflare behavior, and deployment are also still open.
 
 On `e4f8c97`, workspace validation, shared-package typechecks, CMD typecheck,
 static build, and all 11 CMD tests passed on 2026-11-13. The full shared test
@@ -540,9 +540,10 @@ static build is not a release artifact.
    user-owned server. CAD/T2D rendering, CAD-to-EU URL/data selection, and
    CAD/Mixed graph/table/JSON rendering, all four support tabs, TCF7L2
    gene-set evidence, and an association p-value filter/history roundtrip
-   have been checked. Still exercise modal focus/closing, keyboard navigation,
-   graph mount/unmount, association sorting/paging, partial-result warnings,
-   SVG performance, CS2CT
+   have been checked. CSV handler anchor creation was observed, but actual
+   downloads were not confirmed. Still exercise modal focus/closing, keyboard
+   navigation, graph mount/unmount, association sorting/paging,
+   partial-result warnings, SVG performance, CS2CT
    annotation/multi-select controls, missing-name rows, negative scores,
    Sifter links, pathway/correlation sorting/back-forward, correlation
    multi-select/thresholds/internal links, and real CSV downloads (the
