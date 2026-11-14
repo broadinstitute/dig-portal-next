@@ -6,6 +6,7 @@ import { selectProvenanceAncestry } from '@dig-portal/feature-phenotype'
 const props = defineProps<{ phenotype: string, ancestry: string }>()
 const client = createProvenanceClient({ baseUrl: useRuntimeConfig().public.provenanceUrl })
 const view = ref('graph')
+const viewOpen = ref(false)
 const copied = ref(false)
 const copyError = ref(false)
 const { data: traits, status: traitsStatus, error: traitsError, refresh: refreshTraits } = useLazyAsyncData(
@@ -31,7 +32,13 @@ const { data: detail, status, error, refresh } = useLazyAsyncData(
 const json = computed(() => JSON.stringify(detail.value?.raw ?? {}, null, 2))
 const summaryUrl = computed(() => detail.value ? client.summaryStatisticsUrl(detail.value.traitId, detail.value.ancestryId) : null)
 const legacyUrl = computed(() => `https://hugeamp.org/bottom-line.html?${new URLSearchParams({ trait: props.phenotype, ...(props.ancestry ? { ancestry: props.ancestry } : {}) })}`)
-watch(requestKey, () => { view.value = 'graph'; copied.value = false; copyError.value = false })
+watch(requestKey, () => { view.value = 'graph'; viewOpen.value = false; copied.value = false; copyError.value = false })
+
+function closeViewSelectorOnEscape(event: KeyboardEvent) {
+  if (!viewOpen.value) return
+  viewOpen.value = false
+  event.stopPropagation()
+}
 
 async function copyJson() {
   copied.value = false
@@ -73,9 +80,11 @@ async function copyJson() {
         <a :href="summaryUrl!" class="text-primary underline">Download summary statistics</a>
         <a :href="client.provenanceUrl(detail.id)" class="text-primary underline">Provenance data</a>
       </div>
-      <UFormField label="Provenance view">
-        <USelect v-model="view" :items="[{ label: 'Graph', value: 'graph' }, { label: 'Table', value: 'table' }, { label: 'JSON', value: 'json' }]" :portal="false" />
-      </UFormField>
+      <div @keydown.esc.capture="closeViewSelectorOnEscape">
+        <UFormField label="Provenance view">
+          <USelect v-model="view" v-model:open="viewOpen" :items="[{ label: 'Graph', value: 'graph' }, { label: 'Table', value: 'table' }, { label: 'JSON', value: 'json' }]" :portal="false" />
+        </UFormField>
+      </div>
       <ProvenanceGraph v-if="view === 'graph'" :key="detail.id" :graph="detail.graph" />
       <ProvenanceTable v-else-if="view === 'table'" :key="detail.id" :graph="detail.graph" />
       <div v-else class="space-y-3">

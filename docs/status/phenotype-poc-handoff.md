@@ -65,8 +65,9 @@ end of a working session with the next actionable steps and verified results.
   plus 12 forward Tab presses contained and wrapped within the dialog.
   Opening the provenance view selector had also dismissed the modal; its
   options now render inside the dialog. Graph → Table (88 rows) → JSON → Graph
-  switching kept the modal open. Nested select keyboard behavior remains
-  unverified. The browser remains on the T2D association-filter/Fold-sort route.
+  switching kept the modal open. Escape now closes the selector menu first;
+  a second Escape closes the dialog and restores focus. The browser remains on
+  the T2D association-filter/Fold-sort route.
   The first five T2D enhancer rows also produced expected Variant Sifter URLs.
   A `__missing__` tissue filter returned 0/739, so there was no live null-name
   row to verify visually; the null-label and invalid-region cases are unit-
@@ -586,10 +587,12 @@ static build is not a release artifact.
    CAD/Mixed graph/table/JSON rendering, all four support tabs, TCF7L2
    gene-set evidence, and an association p-value filter/history roundtrip
    have been checked. The provenance modal's Escape dismissal, focus return,
-   and forward-Tab containment/wrap are now verified. CSV handler anchor
+   and forward-Tab containment/wrap are now verified. Escape on the provenance
+   view selector closes its menu first, then the modal on a second press.
+   CSV handler anchor
    creation was observed, but actual downloads were not confirmed. Still
-   exercise nested modal-control keyboard behavior, graph mount/unmount,
-   remaining partial-result warnings, SVG performance, CS2CT null-name display
+   exercise graph mount/unmount, remaining partial-result warnings, SVG
+   performance, CS2CT null-name display
    on a live row if available, pathway/correlation Back/Forward, browser CSV
    downloads (the integrated browser did not report download events), and
    other empty/error states. Responsive checks at larger text and additional
